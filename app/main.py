@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from pony import orm
-from .routers import node
+from .routers import node, block
 from .db import startup_db
 from .model.node import Node
 from .model.transaction import Transaction
@@ -10,6 +10,7 @@ startup_db()
 # FastAPI set up
 app = FastAPI()
 app.include_router(node.router)
+app.include_router(block.router)
 
 
 @app.get("/")

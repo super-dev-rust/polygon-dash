@@ -7,6 +7,7 @@ class Transaction(db.Entity):
     hash = orm.PrimaryKey(str)
     creator = orm.Required('Node')
     created = orm.Required(int)
+    block = orm.Required('Block')
 
 
 class TransactionOut(BaseModel):

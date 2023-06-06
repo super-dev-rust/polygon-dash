@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pony import orm
 from app.model.node import Node, NodeInDB
 
