@@ -1,4 +1,5 @@
-alchemy_token.txt
+app/alchemy_token.txt
+app/database.sqlite
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

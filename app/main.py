@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 from pony import orm
 from .routers import node, block
-from .db import startup_db
+from .db import start_db
+from .block_retriever.retriever import start_retriever
 from .model.node import Node
 from .model.transaction import Transaction
+import uvicorn
 
-startup_db()
+# Modules set up
+start_db()
+start_retriever()
 
 # FastAPI set up
 app = FastAPI()
@@ -24,3 +28,7 @@ async def root():
         t2 = Transaction(hash='hash3', creator=n2, created=3333)
         orm.commit()
     return {"message": "Filled DB"}
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
