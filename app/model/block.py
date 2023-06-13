@@ -8,12 +8,14 @@ from app.model.transaction import Transaction, TransactionOut
 class Block(db.Entity):
     number = orm.PrimaryKey(int)
     hash = orm.Required(str, unique=True)
+    validated_by = orm.Required(str)
     transactions = orm.Set(Transaction)
 
 
 class BlockInDB(BaseModel):
     number: int
     hash: str
+    validated_by: str
     transactions: List[TransactionOut]
 
     @validator('transactions', pre=True, allow_reuse=True)

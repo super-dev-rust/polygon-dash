@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException
 from pony import orm
-from app.block_retriever.retriever import get_latest_block
 from app.model.block import Block, BlockInDB
 
 router = APIRouter(
@@ -9,12 +8,6 @@ router = APIRouter(
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
-
-
-@router.get('/trigger_get_latest')
-async def trigger_get_latest():
-    get_latest_block()
-    return {"message": "Triggered the latest block's retrieval"}
 
 
 @router.get('/get_latest')
