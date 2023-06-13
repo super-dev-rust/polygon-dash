@@ -4,6 +4,7 @@ import threading
 import time
 from pony import orm
 from app.model.block import Block
+from app.model.transaction import Transaction
 from app.log import LOGGER
 from app.definitions import ALCHEMY_TOKEN_FILE
 
@@ -45,7 +46,10 @@ def get_block(number=None):
     json_result = make_request('eth_getBlockByNumber', ["latest" if number is None else '0x{:x}'.format(number), True])
     if json_result is None:
         return None
-    return int(json_result['number'], 16), json_result['hash']
+
+    return int(json_result['number'], 16), int(json_result['timestamp'], 16), json_result['hash'], [
+        (tx['hash'], tx['from']) for tx in
+        json_result['transactions']]
 
 
 def get_block_author(number):
@@ -60,24 +64,26 @@ def retriever_thread():
     while True:
         try:
             # first, retrieve the block
-            (fetched_block_number, fetched_block_hash) = get_block(next_block_number)
-            if fetched_block_number is None:
+            (block_number, block_ts, block_hash, block_txs) = get_block(next_block_number)
+            if block_number is None:
                 continue
 
             # second, retrieve the block's author (validator)
-            fetched_block_author = get_block_author(fetched_block_number)
+            fetched_block_author = get_block_author(block_number)
             while fetched_block_author is None:
                 time.sleep(0.5)
-                fetched_block_author = get_block_author(fetched_block_number)
+                fetched_block_author = get_block_author(block_number)
 
             # finally, save it in DB
             with orm.db_session:
-                block = Block(number=fetched_block_number, hash=fetched_block_hash, validated_by=fetched_block_author)
+                block = Block(number=block_number, hash=block_hash, validated_by=fetched_block_author)
+                for tx in block_txs:
+                    block.transactions.add(Transaction(hash=tx[0], creator=tx[1], created=block_ts, block=block_number))
                 orm.commit()
-            LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(fetched_block_number,
-                                                                                               fetched_block_hash))
+            LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
+                                                                                               block_hash))
 
-            next_block_number = fetched_block_number + 1
+            next_block_number = block_number + 1
         except Exception as e:
             LOGGER.error('exception when retrieving block happened: {}'.format(e))
         time.sleep(2)
