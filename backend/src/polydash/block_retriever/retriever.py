@@ -3,10 +3,10 @@ import json
 import threading
 import time
 from pony import orm
-from app.model.block import Block
-from app.model.transaction import Transaction
-from app.log import LOGGER
-from app.definitions import ALCHEMY_TOKEN_FILE
+from polydash.model.block import Block
+from polydash.model.transaction import Transaction
+from polydash.log import LOGGER
+from polydash.definitions import ALCHEMY_TOKEN_FILE
 
 alchemy_token = ''
 

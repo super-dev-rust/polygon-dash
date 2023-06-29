@@ -1,6 +1,6 @@
 from pony import orm
 from pydantic import BaseModel
-from app.db import db
+from polydash.db import db
 
 
 class Transaction(db.Entity):
