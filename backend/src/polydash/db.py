@@ -1,5 +1,5 @@
 from pony import orm
-from app.log import LOGGER
+from polydash.log import LOGGER
 
 # PonyORM set up
 db = orm.Database()

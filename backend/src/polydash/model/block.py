@@ -1,8 +1,8 @@
 from pony import orm
 from pydantic import BaseModel, validator
 from typing import List
-from app.db import db
-from app.model.transaction import Transaction, TransactionOut
+from polydash.db import db
+from polydash.model.transaction import Transaction, TransactionOut
 
 
 class Block(db.Entity):
