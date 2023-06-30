@@ -7,6 +7,7 @@ from polydash.model.block import Block
 from polydash.model.transaction import Transaction
 from polydash.log import LOGGER
 from polydash.definitions import ALCHEMY_TOKEN_FILE
+from polydash.rating.live_time_heuristic import EventQueue
 
 alchemy_token = ''
 
@@ -60,6 +61,8 @@ def get_block_author(number):
 
 def retriever_thread():
     LOGGER.info('block retrieved thread has started')
+    # set to None to begin from the latest block; set to some block ID to begin with it
+    # next_block_number = 44239277
     next_block_number = None
     while True:
         try:
@@ -80,6 +83,7 @@ def retriever_thread():
                 for tx in block_txs:
                     block.transactions.add(Transaction(hash=tx[0], creator=tx[1], created=block_ts, block=block_number))
                 orm.commit()
+                EventQueue.put(block)  # put the block for the heuristics to be updated
             LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
                                                                                                block_hash))
 

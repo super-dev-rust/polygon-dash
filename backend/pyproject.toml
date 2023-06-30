@@ -2,7 +2,7 @@
 name = "polydash"
 version = "0.1.0"
 description = ""
-authors = ["V.G. Bulavintsev <golem.md@gmail.com>"]
+authors = ["V.G. Bulavintsev <golem.md@gmail.com>", "super-dev-rust <n.tpronin@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
