@@ -12,7 +12,7 @@ const { sendRequest: getTable, isLoading, data, error } = useRequest(fetchTable)
 
 const violationsMap = Object.fromEntries(VIOLATIONS_MAP);
 
-const tableData = ref([]);
+const tableData = ref(UNTRUSTED_NODES_MOCK);
 const totalTableEntriesCount = ref(1000);
 const tableState = reactive({
   currentPage: 1,
@@ -43,13 +43,19 @@ const fetchTableData = async () => {
   }
   if (data.value) {
     totalTableEntriesCount.value = data.value.total
-    tableData.value = [...data.value]
+    tableData.value = [...data.value.data]
   }
 };
 
-function percentToHSL(percent) {
+const percentToHSL = (percent) => {
   const hue = (percent / 100) * 120;
   return { 'color': `hsl(${hue}, 100%, 30%)` }
+}
+
+const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
+  return `${violationsMap[type].description}` +
+    `${last_violation ? `\nLast violation: ${last_violation}` : ''}` +
+    `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
 }
 
 </script>
@@ -57,8 +63,9 @@ function percentToHSL(percent) {
 <template>
   <section class="home-dashboard">
     <el-table
-      :data="UNTRUSTED_NODES_MOCK"
+      :data="tableData"
       :default-sort="{ prop: 'rank', order: 'descending' }"
+      v-loading="isLoading"
       class="home-dashboard__table"
     >
       <el-table-column
@@ -125,19 +132,19 @@ function percentToHSL(percent) {
         <template #default="{ row }">
           <el-tag
             v-for="(violation, index) in row.violations"
-            :key="index + violation"
+            :key="index + violation.type"
             class="home-dashboard__table-violation"
           >
             <el-tooltip
               effect="dark"
-              :content="violationsMap[violation].description"
+              :content="getViolationTooltip(violation)"
               placement="top"
               class="home-dashboard__table-violation-tooltip"
             >
               <div>
-                <component :is="violationsMap[violation].icon" />
+                <component :is="violationsMap[violation.type].icon" />
                 <div class="home-dashboard__table-violation-text">
-                  {{ violation }}
+                  {{ violation.type }}
                 </div>
               </div>
             </el-tooltip>
