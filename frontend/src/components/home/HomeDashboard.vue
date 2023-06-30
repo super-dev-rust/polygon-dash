@@ -1,12 +1,51 @@
 <script setup>
+import { computed, reactive, ref } from "vue";
 import IconCopy from "@/assets/icons/icon-copy.svg";
 import { UNTRUSTED_NODES_MOCK} from "@/utils/mocks/home-dasboard-example";
 import { VIOLATIONS_MAP } from "@/utils/violations-map";
 import useCopyToClipboard from "@/use/useCopyToClipboard";
+import { useRequest } from "@/use/useRequest";
+import { fetchTable } from "@/api/api-client";
+
+const { copyToClipboard } = useCopyToClipboard()
+const { sendRequest: getTable, isLoading, data, error } = useRequest(fetchTable)
 
 const violationsMap = Object.fromEntries(VIOLATIONS_MAP);
 
-const { copyToClipboard } = useCopyToClipboard()
+const tableData = ref([]);
+const totalTableEntriesCount = ref(1000);
+const tableState = reactive({
+  currentPage: 1,
+  pageSize: 10,
+});
+
+const updateTableState = async (value, key) => {
+  tableState[key] = value;
+  console.log('tableState', tableState);
+  await fetchTableData();
+};
+
+const checkIfCurrentPagePossible = computed( () => {
+  return tableState.currentPage <= Math.ceil(totalTableEntriesCount.value / tableState.pageSize);
+});
+
+const fetchTableData = async () => {
+  if (isLoading.value || !checkIfCurrentPagePossible.value) {
+    return
+  }
+  await getTable([{
+    page: tableState.currentPage,
+    perPage: tableState.pageSize,
+  }])
+  if (error.value) {
+    console.log('error', error.value)
+    return
+  }
+  if (data.value) {
+    totalTableEntriesCount.value = data.value.total
+    tableData.value = [...data.value]
+  }
+};
 
 function percentToHSL(percent) {
   const hue = (percent / 100) * 120;
@@ -106,6 +145,18 @@ function percentToHSL(percent) {
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination
+      class="home-dashboard__pagination"
+      small
+      layout="prev, pager, next, jumper, sizes"
+      :total="totalTableEntriesCount"
+      :page-sizes="[10, 20, 30, 40]"
+      :pager-count="5"
+      v-model:page-size="tableState.pageSize"
+      v-model:current-page="tableState.currentPage"
+      @size-change="updateTableState($event, 'pageSize')"
+      @current-change="updateTableState($event, 'currentPage')"
+    />
   </section>
 </template>
 
@@ -191,6 +242,10 @@ function percentToHSL(percent) {
         }
       }
     }
+  }
+
+  .home-dashboard__pagination {
+    margin-top: 1rem;
   }
 }
 </style>
