@@ -19,5 +19,4 @@ def test_get_latest_risk(mock_db):
         MinerRisk.add_datapoint("abc", 20)
         MinerRisk.add_datapoint("ebf", 30)
         MinerRisk.add_datapoint("ebf", 30)
-        result = list(MinerRisk.select_latest_risks())
-        print(result)
+        print(MinerRisk.select()[:])

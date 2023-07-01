@@ -10,7 +10,6 @@ from polydash.routers.dashboard import router
 
 @pytest.fixture()
 def mock_db(tmp_path):
-
     # ACTHUNG! We must use real file (no :memory:) here,
     # because FastAPI testing does not work otherwise (threads-related stuff)
     db.bind(provider='sqlite', filename=str(tmp_path / "test.db"), create_db=True)
@@ -26,12 +25,11 @@ def client():
 
 def test_complete_init_with_default_values(mock_db, client):
     MinerRisk.add_datapoint("abc", 20)
-    MinerRisk.add_datapoint("abc", 20)
     MinerRisk.add_datapoint("ebf", 30)
     MinerRisk.add_datapoint("ebf", 15)
+    MinerRisk.add_datapoint("abc", 20)
     response = client.get("/dash/miners")
-    print(response.content)
     assert response.status_code == 200
-    #assert response.json() == result
-
-
+    # assert response.json() == result
+    response = client.get("/dash/miners?order_by=numblocks&sort_order=desc")
+    print(response.content)
