@@ -8,7 +8,7 @@ from polydash.model.transaction import Transaction
 from polydash.log import LOGGER
 from polydash.definitions import ALCHEMY_TOKEN_FILE
 from polydash.rating.live_time_heuristic import EventQueue
-
+from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 alchemy_token = ''
 
 
@@ -50,15 +50,18 @@ def get_block(number=None):
 
     return int(json_result['number'], 16), int(json_result['timestamp'], 16), json_result['hash'], [
         (tx['hash'], tx['from']) for tx in
-        json_result['transactions']], parse_txs(json_result)
+        json_result['transactions']], parse_txs(json_result), int(json_result['baseFeePerGas'], 16)
 
 
 def parse_txs(json_result):
     return {
         tx["hash"]: {
-            "fee": int(tx["gasPrice"], 16) * int(tx["gas"], 16),
             "from": tx["from"],
-            "to": tx["to"]
+            "to": tx["to"],
+            "gas_tip_cap": int(tx["maxPriorityFeePerGas"], 16),
+            "gas_fee_cap": int(tx["maxFeePerGas"], 16),
+            "nonce": int(tx["nonce"], 16),
+            
         } 
         for tx in json_result["transactions"]
     }
@@ -77,10 +80,11 @@ def retriever_thread():
     while True:
         try:
             # first, retrieve the block
-            (block_number, block_ts, block_hash, block_txs) = get_block(next_block_number)
+            (block_number, block_ts, block_hash, block_txs, block_txs_d, base_fee) = get_block(next_block_number)
             if block_number is None:
                 continue
-
+            
+            
             # second, retrieve the block's author (validator)
             fetched_block_author = get_block_author(block_number)
             while fetched_block_author is None:
@@ -93,6 +97,7 @@ def retriever_thread():
                 for tx in block_txs:
                     block.transactions.add(Transaction(hash=tx[0], creator=tx[1], created=block_ts, block=block_number))
                 orm.commit()
+                BlockPoolHeuristicQueue.put((block_number, block_ts, block_txs_d, base_fee)) # put the block data to the Heuristic A Queue
                 EventQueue.put(block)  # put the block for the heuristics to be updated
             LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
                                                                                                block_hash))

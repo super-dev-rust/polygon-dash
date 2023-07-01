@@ -26,3 +26,4 @@ class TransactionFetched(db_p2p.Entity):
     tx_first_seen = orm.Optional(int)
     receiver = orm.Optional(str)
     signer = orm.Optional(str)
+    nonce = orm.Optional(str)
