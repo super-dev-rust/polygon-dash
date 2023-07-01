@@ -6,6 +6,7 @@ from pony import orm
 
 from polydash.log import LOGGER
 from polydash.model.node import Node
+from polydash.model.risk import MinerRisk
 from polydash.model.transaction_p2p import TransactionP2P
 
 TRANSACTION_WINDOW_SIZE = 700  # ~10 blocks
@@ -77,6 +78,9 @@ def main_loop():
             # update our internal mean-variance state and find outliers
             for tx in block.transactions:
                 process_transaction(author_node, tx)
+            with orm.db_session:
+                author_node = Node.get(pubkey=block.validated_by)
+                MinerRisk.add_datapoint(block.validated_by, author_node.outliers)
         except Exception as e:
             LOGGER.error('exception when calculating the live-time mean&variance happened: {}'.format(str(e)))
 
