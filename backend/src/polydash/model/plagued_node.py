@@ -8,12 +8,12 @@ class PlaguedBlock(db_p2p.Entity):
     tx_total = orm.Required(int)
     tx_reordered = orm.Required(int)
 
-class TransactionSummary(db_p2p.Entity):
-    _table_ = 'tx_summary'
-    id = orm.PrimaryKey(int)
-    tx_hash = orm.Optional(str)
-    peer_id = orm.Optional(str)
-    tx_first_seen = orm.Optional(int)
+# class TransactionSummary(db_p2p.Entity):
+#     _table_ = 'tx_summary'
+#     id = orm.PrimaryKey(int)
+#     tx_hash = orm.Optional(str)
+#     peer_id = orm.Optional(str)
+#     tx_first_seen = orm.Optional(int)
     
 
 class TransactionFetched(db_p2p.Entity):

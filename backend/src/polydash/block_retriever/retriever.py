@@ -47,7 +47,7 @@ def get_block(number=None):
     json_result = make_request('eth_getBlockByNumber', ["latest" if number is None else '0x{:x}'.format(number), True])
     if json_result is None:
         return None
-
+    
     return int(json_result['number'], 16), int(json_result['timestamp'], 16), json_result['hash'], [
         (tx['hash'], tx['from']) for tx in
         json_result['transactions']], parse_txs(json_result), int(json_result['baseFeePerGas'], 16)
@@ -58,8 +58,8 @@ def parse_txs(json_result):
         tx["hash"]: {
             "from": tx["from"],
             "to": tx["to"],
-            "gas_tip_cap": int(tx["maxPriorityFeePerGas"], 16),
-            "gas_fee_cap": int(tx["maxFeePerGas"], 16),
+            "gas_tip_cap": int(tx.get("maxPriorityFeePerGas", "0"), 16),
+            "gas_fee_cap": int(tx.get("maxFeePerGas", "0"), 16),
             "nonce": int(tx["nonce"], 16),
             
         } 
