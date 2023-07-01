@@ -25,8 +25,9 @@ class MinerDisplayData(BaseModel):
     rank: int
     score: int
     address: str
-    #blocks_created: int
-    #violations: List[ViolationDisplayData]
+    name: str
+    blocks_created: int  # percentage
+    violations: List[ViolationDisplayData]
 
 
 @router.get('/miners')
@@ -37,10 +38,18 @@ async def get_miners_info(
         sort_order: str = None,
 ):
     with db_session:
-        miners = MinerRisk.get_latest_risks()[skip:limit]
-        if not miners:
-            raise HTTPException(status_code=404, detail="No data found for this query ")
-        for m in miners:
+        miners = MinerRisk.select_latest_risks()
+        miners_by_risk = sorted(miners, key=lambda x: x.risk, reverse=True)
+        ranks = {m.miner: rank for rank, m in enumerate(miners_by_risk)}
+        total_block_count = sum(m.blocks_created for m in miners)
 
-        result = [MinerDisplayData]
+        result = [
+            MinerDisplayData(
+                score=m.risk,
+                address=m.miner,
+                rank=ranks[m.miner],
+                name="UNKNOWN",
+                blocks_created=(100 * m.blocks_created) // total_block_count,
+                violations=[]
+            ) for m in miners]
     return result
