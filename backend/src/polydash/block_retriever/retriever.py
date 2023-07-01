@@ -18,7 +18,7 @@ def get_alchemy_url():
         with open(ALCHEMY_TOKEN_FILE, 'r') as file:
             alchemy_token = file.read()
 
-    return "https://polygon-mainnet.g.alchemy.com/v2/{}".format(alchemy_token)
+    return "https://polygon-mainnet.g.alchemy.com/v2/{}".format(alchemy_token.strip())
 
 
 def make_request(rpc_method, params):
@@ -50,8 +50,18 @@ def get_block(number=None):
 
     return int(json_result['number'], 16), int(json_result['timestamp'], 16), json_result['hash'], [
         (tx['hash'], tx['from']) for tx in
-        json_result['transactions']]
+        json_result['transactions']], parse_txs(json_result)
 
+
+def parse_txs(json_result):
+    return {
+        tx["hash"]: {
+            "fee": int(tx["gasPrice"], 16) * int(tx["gas"], 16),
+            "from": tx["from"],
+            "to": tx["to"]
+        } 
+        for tx in json_result["transactions"]
+    }
 
 def get_block_author(number):
     # the result is just a string or None, so return it directly
