@@ -41,7 +41,7 @@ async def get_miners_info(
         pagesize: int = 20,
         order_by: str = None,
         sort_order: SortOrder = Query(None, title="Sort Order")
-):
+) -> MinerDisplayData:
     with db_session():
         # TODO: this one is horribly inefficient,
         #  probably should be optimized by caching, etc.
