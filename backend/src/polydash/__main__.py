@@ -4,11 +4,13 @@ from .routers import node, block, dashboard
 from .db import start_db
 from .block_retriever.retriever import start_retriever
 from .rating.live_time_heuristic import start_live_time_heuristic
+from .rating.live_time_heuristic_a import start_live_time_heuristic_a
 
 # Modules set up
 start_db()
 start_retriever()
 start_live_time_heuristic()
+# start_live_time_heuristic_a()
 
 # FastAPI set up
 app = FastAPI()
