@@ -6,7 +6,7 @@ from pony import orm
 
 from polydash.log import LOGGER
 from polydash.model.transaction_p2p import TransactionP2P
-from polydash.model.plagued_node import TransactionFetched
+from polydash.model.plagued_node import TransactionFetched, PlaguedBlock, PlaguedTransaction
 
 BlockPoolHeuristicQueue = queue.Queue()
 
@@ -17,37 +17,43 @@ GAS_PRICE = 30000000000
 
 
 @orm.db_session
-def process_block(base_fee, block_timestamp, transactions):
+def process_block(block_number, block_hash, base_fee, block_timestamp, transactions):
     #Let's say txes below is all txes we should see in a block except local txes
     LOGGER.debug("Processing block")
     print("transaction length: ", len(transactions))
     pending_txs = pending_transactions_by_price_and_nonce(block_timestamp, base_fee)
+    transactions_amount = len(transactions)
+    transactions_found = 0
+    plagued_block = PlaguedBlock(number=block_number, hash=block_hash, tx_missing_amount=0, tx_remote_total_amount=transactions_amount, tx_found_amount=0)
     for signer_hash, tx_data in pending_txs.items():
+        violations = ""
         if tx_data[0].tx_hash in transactions:
-            # we have seen it
-            print("We have seen it", tx_data[0].tx_hash)
+            transactions_found += 1
+            tx_hash = tx_data[0].tx_hash
+            if tx_data[0].nonce != transactions[tx_hash]["nonce"]:
+                violations += "nonce "
+            effective_tip_block_tx = get_effective_tip(base_fee, transactions[tx_hash]["gas_fee_cap"], transactions[tx_hash]["gas_tip_cap"])
+            if tx_data[1] != effective_tip_block_tx:
+                violations += "effective_tip "
+                
+            plagued_block.txs_found.add(PlaguedTransaction(tx_hash=tx_hash, signer=signer_hash, 
+                                                           nonce=transactions[tx_hash]["nonce"], 
+                                                           miner_fee=str(effective_tip_block_tx), 
+                                                           violations=violations,
+                                                           block=block_number))
+            plagued_block.tx_missing_amount = transactions_amount - transactions_found
+            plagued_block.tx_found_amount = transactions_found
+            orm.commit()
         
-        # if tx_hash not in transactions:
-        #     # we haven't seen it
-        #     x = 1
-        #     # print("We haven't seen it")
-        # elif tx_data[0].nonce != transactions[tx_hash]["nonce"]:
-        #     print(f"Transaction {tx_hash} has different nonces in the two sets of transactions.")
-        # else:
-        #     effective_tip_json = get_effective_tip(base_fee, transactions[tx_hash]["gas_fee_cap"], transactions[tx_hash]["gas_tip_cap"])
-        #     if tx_data[1] != effective_tip_json:
-        #         print(f"Transaction {tx_hash} has different effective tips in the two sets of transactions.")
-        #     print("We have seen it")
-    
 
 
     
 @orm.db_session
 def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
     pending_txs = {}
-    lower_bound = block_timestamp - 60000
-    upper_bound = block_timestamp + 10
-    query = TransactionFetched.select_by_sql("SELECT * FROM tx_fetched WHERE tx_first_seen > $lower_bound and tx_first_seen < $upper_bound")
+    lower_bound = block_timestamp - 360000
+    upper_bound = block_timestamp
+    query = TransactionFetched.select_by_sql("SELECT * FROM tx_fetched WHERE tx_first_seen > $lower_bound AND tx_first_seen < $upper_bound")
     LOGGER.debug("Querying pending transactions")
     transactions = list(query)
     for tx in transactions:
@@ -84,7 +90,7 @@ def main_loop():
             # get the block from some other thread
             (block_number, block_ts, block_hash, block_txs_d, base_fee) = BlockPoolHeuristicQueue.get()
             with orm.db_session:
-                process_block(base_fee, block_ts, block_txs_d)
+                process_block(block_number, block_hash, base_fee, block_ts, block_txs_d)
         except Exception as e:
             LOGGER.error(
                 "exception when calculating heuristic-a happened: {}".format(
