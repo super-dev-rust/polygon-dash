@@ -11,7 +11,7 @@ from .rating.live_time_heuristic_a import start_live_time_heuristic_a
 start_db()
 start_retriever()
 start_live_time_heuristic()
-# start_live_time_heuristic_a()
+start_live_time_heuristic_a()
 
 # FastAPI set up
 app = FastAPI()

@@ -14,6 +14,13 @@ router = APIRouter(
 )
 
 
+class SortBy(str, Enum):
+    rank = "rank"
+    blocks_created = "blocks_created"
+    address = "address"
+    score = "score"
+
+
 class SortOrder(str, Enum):
     asc = "asc"
     desc = "desc"
@@ -35,28 +42,43 @@ class MinerDisplayData(BaseModel):
     violations: List[ViolationDisplayData]
 
 
+class DashboardData(BaseModel):
+    data: List[MinerDisplayData]
+    total: int
+
+
+SORT_COLUMNS_MAP = {
+    SortBy.blocks_created: MinerRisk.numblocks,
+    SortBy.address: MinerRisk.pubkey,
+    SortBy.score: MinerRisk.risk,
+    # Essentially, sorting by rank means reverse sorting by risk
+    SortBy.rank: MinerRisk.risk,
+}
+
+
 @router.get('/miners')
 async def get_miners_info(
         page: int = 0,
         pagesize: int = 20,
-        order_by: str = None,
+        order_by: SortBy = Query(None, title="Sort By"),
         sort_order: SortOrder = Query(None, title="Sort Order")
-) -> List[MinerDisplayData]:
+) -> DashboardData:
     with db_session():
         # TODO: this one is horribly inefficient,
         #  probably should be optimized by caching, etc.
-        miners_by_risk = MinerRisk.select().order_by(desc(MinerRisk.risk))
+        miners_by_risk = MinerRisk.select().order_by(MinerRisk.risk)
         ranks = {m.pubkey: rank for rank, m in enumerate(miners_by_risk)}
         total_block_count = sum(m.numblocks for m in miners_by_risk)
+        total_miners = miners_by_risk.count()
 
         miners = MinerRisk.select()
+
         if order_by:
-            if (order_by_attr := getattr(MinerRisk, order_by, None)) is None:
-                raise HTTPException(status_code=400, detail=f"Invalid order_by: {order_by}")
+            sort_attr = SORT_COLUMNS_MAP.get(order_by)
             if sort_order == SortOrder.desc:
-                miners = miners.sort_by(desc(order_by_attr))
+                miners = miners.sort_by(desc(sort_attr))
             else:
-                miners = miners.sort_by(order_by_attr)
+                miners = miners.sort_by(sort_attr)
 
         miners = miners.page(page, pagesize)
 
@@ -69,4 +91,5 @@ async def get_miners_info(
                 blocks_created=m.numblocks / total_block_count,
                 violations=[]
             ) for m in miners]
-    return result
+
+    return DashboardData(data=result, total=total_miners)
