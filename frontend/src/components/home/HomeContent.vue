@@ -37,7 +37,7 @@
   }
 
   .home-content__graphics {
-    background: #262A2D;
+    background: rgba(38, 42, 45, 0);
   }
 }
 </style>

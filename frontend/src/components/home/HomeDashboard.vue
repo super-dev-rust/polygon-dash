@@ -189,13 +189,12 @@ onUnmounted(() => {
       </el-table-column>
     </el-table>
     <el-pagination
-      v-if="totalTableEntriesCount"
+      v-if="tableData.length"
       class="home-dashboard__pagination"
       small
-      layout="prev, pager, next, jumper, sizes"
+      layout="prev, pager, next, jumper, sizes, total"
       :total="totalTableEntriesCount"
       :page-sizes="[10, 20, 30, 40]"
-      :pager-count="5"
       v-model:page-size="tableState.pageSize"
       v-model:current-page="tableState.currentPage"
       @size-change="updateTableState($event, 'pageSize')"
@@ -290,6 +289,8 @@ onUnmounted(() => {
 
   .home-dashboard__pagination {
     margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 0;
   }
 }
 </style>
