@@ -81,20 +81,31 @@ def get_block_author(number):
 def retriever_thread():
     LOGGER.info('block retrieved thread has started')
     # set to None to begin from the latest block; set to some block ID to begin with it
-    next_block_number = 44563033
-    # next_block_number = None
+    # next_block_number = 44239277
+    next_block_number = None
+    failure_count = 0
     while True:
+        if failure_count > 3:
+            LOGGER.error('giving up trying to retrieve block {}, moving to the next one...'.format(next_block_number))
+            failure_count = 0
+            next_block_number += 1
+
         try:
             # first, retrieve the block
             (block_number, block_ts, block_hash, block_txs, block_txs_d, base_fee) = get_block(next_block_number)
             if block_number is None:
+                failure_count += 1
                 continue
 
             # second, retrieve the block's author (validator)
+            author_failure_count = 0
             fetched_block_author = get_block_author(block_number)
             while fetched_block_author is None:
+                if author_failure_count > 5:
+                    raise 'could not retrieve the author of the block'
                 LOGGER.info('trying to retrieve the author of block {} again...'.format(block_number))
                 time.sleep(0.5)
+                author_failure_count += 1
                 fetched_block_author = get_block_author(block_number)
 
             # finally, save it in DB
@@ -103,13 +114,16 @@ def retriever_thread():
                 for tx in block_txs:
                     block.transactions.add(Transaction(hash=tx[0], creator=tx[1], created=block_ts, block=block_number))
                 orm.commit()
-                BlockPoolHeuristicQueue.put((block_number, block_ts, block_hash, block_txs_d, base_fee)) # put the block data to the Heuristic A Queue
+                BlockPoolHeuristicQueue.put((block_number, block_ts, block_hash, block_txs_d,
+                                             base_fee))  # put the block data to the Heuristic A Queue
                 EventQueue.put(block)  # put the block for the heuristics to be updated
             LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
                                                                                                block_hash))
 
             next_block_number = block_number + 1
+            failure_count = 0
         except Exception as e:
+            failure_count += 1
             LOGGER.error('exception when retrieving block happened: {}'.format(e))
         time.sleep(2)
 
