@@ -1,27 +1,45 @@
 <script setup>
-import { computed, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import IconCopy from "@/assets/icons/icon-copy.svg";
-import { UNTRUSTED_NODES_MOCK} from "@/utils/mocks/home-dasboard-example";
 import { VIOLATIONS_MAP } from "@/utils/violations-map";
 import useCopyToClipboard from "@/use/useCopyToClipboard";
 import { useRequest } from "@/use/useRequest";
 import { fetchTable } from "@/api/api-client";
+
+const ORDER_MAP = {
+  ascending: 'asc',
+  descending: 'desc',
+};
 
 const { copyToClipboard } = useCopyToClipboard()
 const { sendRequest: getTable, isLoading, data, error } = useRequest(fetchTable)
 
 const violationsMap = Object.fromEntries(VIOLATIONS_MAP);
 
-const tableData = ref(UNTRUSTED_NODES_MOCK);
+const tableData = ref([]);
 const totalTableEntriesCount = ref(1000);
 const tableState = reactive({
   currentPage: 1,
   pageSize: 10,
 });
+const tableSort = ref({});
 
 const updateTableState = async (value, key) => {
   tableState[key] = value;
   console.log('tableState', tableState);
+  await fetchTableData();
+};
+const updateTableSort = async ({ prop, order }) => {
+  console.log('order_by', prop)
+  console.log('sort_order', order)
+  if (!order) {
+    tableSort.value = {};
+    await fetchTableData();
+    return;
+  }
+  tableSort.value.order_by = prop;
+  tableSort.value.sort_order = ORDER_MAP[order];
+  console.log('tableSort', tableSort.value);
   await fetchTableData();
 };
 
@@ -35,7 +53,8 @@ const fetchTableData = async () => {
   }
   await getTable([{
     page: tableState.currentPage,
-    perPage: tableState.pageSize,
+    pagesize: tableState.pageSize,
+    ...tableSort.value,
   }])
   if (error.value) {
     console.log('error', error.value)
@@ -48,7 +67,7 @@ const fetchTableData = async () => {
 };
 
 const percentToHSL = (percent) => {
-  const hue = (percent / 100) * 120;
+  const hue = 120 - (percent / 100) * 120;
   return { 'color': `hsl(${hue}, 100%, 30%)` }
 }
 
@@ -58,27 +77,31 @@ const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
     `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
 }
 
+onMounted(async () => {
+  await fetchTableData();
+});
+
 </script>
 
 <template>
   <section class="home-dashboard">
     <el-table
       :data="tableData"
-      :default-sort="{ prop: 'rank', order: 'descending' }"
       v-loading="isLoading"
       class="home-dashboard__table"
+      @sort-change="updateTableSort"
     >
       <el-table-column
         prop="rank"
         label="Rank"
         width="90"
-        sortable
+        sortable="custom"
       />
       <el-table-column
-        label="Trust"
+        label="Risk"
         prop="score"
         width="90"
-        sortable
+        sortable="custom"
       >
         <template #default="{ row }">
           <span :style="percentToHSL(row.score)">
@@ -117,10 +140,10 @@ const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
         prop="blocks_created"
         label="Blocks"
         width="95"
-        sortable
+        sortable="custom"
       >
         <template #default="{ row }">
-          {{ row.blocks_created }}%
+          {{ (row.blocks_created * 100).toFixed(1) }}%
         </template>
       </el-table-column>
       <el-table-column
@@ -153,6 +176,7 @@ const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
       </el-table-column>
     </el-table>
     <el-pagination
+      v-if="totalTableEntriesCount"
       class="home-dashboard__pagination"
       small
       layout="prev, pager, next, jumper, sizes"
