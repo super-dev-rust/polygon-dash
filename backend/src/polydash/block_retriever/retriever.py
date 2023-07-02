@@ -57,7 +57,7 @@ def parse_txs(json_result):
     return {
         tx["hash"]: {
             "from": tx["from"],
-            "to": tx["to"],
+            "to": tx.get("to", None),
             "gas_tip_cap": int(tx.get("maxPriorityFeePerGas", "0"), 16),
             "gas_fee_cap": int(tx.get("maxFeePerGas", "0"), 16),
             "nonce": int(tx["nonce"], 16),
@@ -75,8 +75,8 @@ def get_block_author(number):
 def retriever_thread():
     LOGGER.info('block retrieved thread has started')
     # set to None to begin from the latest block; set to some block ID to begin with it
-    # next_block_number = 44239277
-    next_block_number = None
+    next_block_number = 44563033
+    # next_block_number = None
     while True:
         try:
             # first, retrieve the block
@@ -97,7 +97,7 @@ def retriever_thread():
                 for tx in block_txs:
                     block.transactions.add(Transaction(hash=tx[0], creator=tx[1], created=block_ts, block=block_number))
                 orm.commit()
-                BlockPoolHeuristicQueue.put((block_number, block_ts, block_txs_d, base_fee)) # put the block data to the Heuristic A Queue
+                BlockPoolHeuristicQueue.put((block_number, block_ts, block_hash, block_txs_d, base_fee)) # put the block data to the Heuristic A Queue
                 EventQueue.put(block)  # put the block for the heuristics to be updated
             LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
                                                                                                block_hash))
