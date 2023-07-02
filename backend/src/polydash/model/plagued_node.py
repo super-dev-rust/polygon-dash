@@ -1,20 +1,23 @@
 from pony import orm
-from polydash.db import db_p2p
+from polydash.db import db_p2p, db
 
-class PlaguedBlock(db_p2p.Entity):
-    hash = orm.PrimaryKey(str)
-    produced = orm.Required(str)
-    tx_missing = orm.Required(int)
-    tx_total = orm.Required(int)
-    tx_reordered = orm.Required(int)
+class PlaguedTransaction(db.Entity):
+    tx_hash = orm.PrimaryKey(str)
+    signer = orm.Required(str)
+    nonce = orm.Required(int)
+    miner_fee = orm.Required(str)
+    violations = orm.Optional(str)
+    block = orm.Required('PlaguedBlock')
 
-# class TransactionSummary(db_p2p.Entity):
-#     _table_ = 'tx_summary'
-#     id = orm.PrimaryKey(int)
-#     tx_hash = orm.Optional(str)
-#     peer_id = orm.Optional(str)
-#     tx_first_seen = orm.Optional(int)
-    
+
+class PlaguedBlock(db.Entity):
+    number = orm.PrimaryKey(int)
+    hash = orm.Required(str)
+    tx_missing_amount = orm.Required(int)
+    tx_remote_total_amount = orm.Required(int)
+    tx_found_amount = orm.Required(int)
+    txs_found = orm.Set(PlaguedTransaction)
+    # txs_missing = orm.Set(PlaguedTransaction)
 
 class TransactionFetched(db_p2p.Entity):
     _table_ = 'tx_fetched'
