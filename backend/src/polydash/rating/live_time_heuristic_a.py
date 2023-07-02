@@ -22,6 +22,9 @@ def process_block(block_number, block_hash, base_fee, block_timestamp, transacti
     LOGGER.debug("Processing block")
     print("transaction length: ", len(transactions))
     pending_txs = pending_transactions_by_price_and_nonce(block_timestamp, base_fee)
+    if pending_txs is None:
+        LOGGER.error("Could not get pending transactions")
+        return
     transactions_amount = len(transactions)
     transactions_found = 0
     plagued_block = PlaguedBlock(number=block_number, hash=block_hash, tx_missing_amount=0, tx_remote_total_amount=transactions_amount, tx_found_amount=0)
@@ -56,6 +59,8 @@ def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
     query = TransactionFetched.select_by_sql("SELECT * FROM tx_fetched WHERE tx_first_seen > $lower_bound AND tx_first_seen < $upper_bound")
     LOGGER.debug("Querying pending transactions")
     transactions = list(query)
+    if len(transactions) == 0:
+        return None
     for tx in transactions:
         # Convert nonce to integer
         nonce = int(tx.nonce)
