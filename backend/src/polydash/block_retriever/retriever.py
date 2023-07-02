@@ -9,6 +9,7 @@ from polydash.log import LOGGER
 from polydash.definitions import ALCHEMY_TOKEN_FILE
 from polydash.rating.live_time_heuristic import EventQueue
 from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
+
 alchemy_token = ''
 
 
@@ -37,7 +38,11 @@ def make_request(rpc_method, params):
         return None
 
     json_response = json.loads(response.text)
-    if json_response is None or json_response['result'] == 'null':
+    if json_response is None:
+        LOGGER.error('could not make a request: json_response is None')
+        return None
+    if 'error' in json_response:
+        LOGGER.error('could not make a request: error in the response: {}'.format(json_response['error']))
         return None
     return json_response['result']
 
@@ -47,7 +52,7 @@ def get_block(number=None):
     json_result = make_request('eth_getBlockByNumber', ["latest" if number is None else '0x{:x}'.format(number), True])
     if json_result is None:
         return None
-    
+
     return int(json_result['number'], 16), int(json_result['timestamp'], 16), json_result['hash'], [
         (tx['hash'], tx['from']) for tx in
         json_result['transactions']], parse_txs(json_result), int(json_result['baseFeePerGas'], 16)
@@ -61,10 +66,11 @@ def parse_txs(json_result):
             "gas_tip_cap": int(tx.get("maxPriorityFeePerGas", "0"), 16),
             "gas_fee_cap": int(tx.get("maxFeePerGas", "0"), 16),
             "nonce": int(tx["nonce"], 16),
-            
-        } 
+
+        }
         for tx in json_result["transactions"]
     }
+
 
 def get_block_author(number):
     # the result is just a string or None, so return it directly
@@ -83,11 +89,11 @@ def retriever_thread():
             (block_number, block_ts, block_hash, block_txs, block_txs_d, base_fee) = get_block(next_block_number)
             if block_number is None:
                 continue
-            
-            
+
             # second, retrieve the block's author (validator)
             fetched_block_author = get_block_author(block_number)
             while fetched_block_author is None:
+                LOGGER.info('trying to retrieve the author of block {} again...'.format(block_number))
                 time.sleep(0.5)
                 fetched_block_author = get_block_author(block_number)
 
