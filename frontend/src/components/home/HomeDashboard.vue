@@ -23,6 +23,7 @@ const tableState = reactive({
   pageSize: 10,
 });
 const tableSort = ref({});
+let timeoutId = null;
 
 const updateTableState = async (value, key) => {
   tableState[key] = value;
@@ -51,6 +52,7 @@ const fetchTableData = async () => {
   if (isLoading.value || !checkIfCurrentPagePossible.value) {
     return
   }
+  clearTimeout(timeoutId);
   await getTable([{
     page: tableState.currentPage,
     pagesize: tableState.pageSize,
@@ -64,6 +66,13 @@ const fetchTableData = async () => {
     totalTableEntriesCount.value = data.value.total
     tableData.value = [...data.value.data]
   }
+  setTimeoutForFetchTableData();
+};
+
+const setTimeoutForFetchTableData = () => {
+  timeoutId = setTimeout(async () => {
+    await fetchTableData();
+  }, 10 * 1000);
 };
 
 const percentToHSL = (percent) => {
@@ -77,20 +86,12 @@ const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
     `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
 }
 
-let intervalId = null;
-const setIntervalForFetchTableData = () => {
-  intervalId = setInterval(async () => {
-    await fetchTableData();
-  }, 60 * 1000);
-};
-
 onMounted(async () => {
   await fetchTableData();
-  setIntervalForFetchTableData();
 });
 
 onUnmounted(() => {
-  clearInterval(intervalId);
+  clearTimeout(timeoutId);
 });
 
 </script>
