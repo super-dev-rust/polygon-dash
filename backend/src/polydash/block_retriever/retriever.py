@@ -69,6 +69,9 @@ def parse_txs(json_result):
 
         }
         for tx in json_result["transactions"]
+        if tx.get("to", None) is not None
+        and int(tx.get("maxPriorityFeePerGas", "0"), 16) != 0
+        and int(tx.get("maxFeePerGas", "0"), 16) != 0
     }
 
 
@@ -81,7 +84,7 @@ def get_block_author(number):
 def retriever_thread():
     LOGGER.info('block retrieved thread has started')
     # set to None to begin from the latest block; set to some block ID to begin with it
-    # next_block_number = 44239277
+    # next_block_number = 44563035
     next_block_number = None
     failure_count = 0
     while True:
