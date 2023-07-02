@@ -1,11 +1,17 @@
-FROM python:3.8-slim-buster
+# Use an official Python runtime as a parent image
+FROM python:3.10-slim-buster
 
+# Set the working directory in the container to /app
 WORKDIR /app
 
-COPY requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+# Copy the current directory contents into the container at /app
+COPY . /app
 
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
-COPY . .
+# Use Poetry to install dependencies
+RUN poetry install --no-dev --no-interaction --no-ansi
 
-CMD ["uvicorn", "app.main:app", "--port", "6060"]
+# Run the application as a Python module
+CMD ["python", "-m", "polydash"]

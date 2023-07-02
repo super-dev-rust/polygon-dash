@@ -7,7 +7,8 @@ from polydash.model.block import Block
 from polydash.model.transaction import Transaction
 from polydash.log import LOGGER
 from polydash.definitions import ALCHEMY_TOKEN_FILE
-
+from polydash.rating.live_time_heuristic import EventQueue
+from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 alchemy_token = ''
 
 
@@ -17,7 +18,7 @@ def get_alchemy_url():
         with open(ALCHEMY_TOKEN_FILE, 'r') as file:
             alchemy_token = file.read()
 
-    return "https://polygon-mainnet.g.alchemy.com/v2/{}".format(alchemy_token)
+    return "https://polygon-mainnet.g.alchemy.com/v2/{}".format(alchemy_token.strip())
 
 
 def make_request(rpc_method, params):
@@ -46,11 +47,24 @@ def get_block(number=None):
     json_result = make_request('eth_getBlockByNumber', ["latest" if number is None else '0x{:x}'.format(number), True])
     if json_result is None:
         return None
-
+    
     return int(json_result['number'], 16), int(json_result['timestamp'], 16), json_result['hash'], [
         (tx['hash'], tx['from']) for tx in
-        json_result['transactions']]
+        json_result['transactions']], parse_txs(json_result), int(json_result['baseFeePerGas'], 16)
 
+
+def parse_txs(json_result):
+    return {
+        tx["hash"]: {
+            "from": tx["from"],
+            "to": tx["to"],
+            "gas_tip_cap": int(tx.get("maxPriorityFeePerGas", "0"), 16),
+            "gas_fee_cap": int(tx.get("maxFeePerGas", "0"), 16),
+            "nonce": int(tx["nonce"], 16),
+            
+        } 
+        for tx in json_result["transactions"]
+    }
 
 def get_block_author(number):
     # the result is just a string or None, so return it directly
@@ -60,14 +74,17 @@ def get_block_author(number):
 
 def retriever_thread():
     LOGGER.info('block retrieved thread has started')
+    # set to None to begin from the latest block; set to some block ID to begin with it
+    # next_block_number = 44239277
     next_block_number = None
     while True:
         try:
             # first, retrieve the block
-            (block_number, block_ts, block_hash, block_txs) = get_block(next_block_number)
+            (block_number, block_ts, block_hash, block_txs, block_txs_d, base_fee) = get_block(next_block_number)
             if block_number is None:
                 continue
-
+            
+            
             # second, retrieve the block's author (validator)
             fetched_block_author = get_block_author(block_number)
             while fetched_block_author is None:
@@ -80,6 +97,8 @@ def retriever_thread():
                 for tx in block_txs:
                     block.transactions.add(Transaction(hash=tx[0], creator=tx[1], created=block_ts, block=block_number))
                 orm.commit()
+                BlockPoolHeuristicQueue.put((block_number, block_ts, block_txs_d, base_fee)) # put the block data to the Heuristic A Queue
+                EventQueue.put(block)  # put the block for the heuristics to be updated
             LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
                                                                                                block_hash))
 

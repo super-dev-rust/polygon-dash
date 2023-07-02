@@ -1,17 +1,20 @@
 import uvicorn
 from fastapi import FastAPI
-from .routers import node, block
+from .routers import node, block, dashboard
 from .db import start_db
 from .block_retriever.retriever import start_retriever
+from .rating.live_time_heuristic import start_live_time_heuristic
 
 # Modules set up
 start_db()
 start_retriever()
+start_live_time_heuristic()
 
 # FastAPI set up
 app = FastAPI()
-# app.include_router(node.router)
+app.include_router(node.router)
 app.include_router(block.router)
+app.include_router(dashboard.router)
 
 
 @app.get("/")
