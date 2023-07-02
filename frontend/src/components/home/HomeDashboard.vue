@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from "vue";
+import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import IconCopy from "@/assets/icons/icon-copy.svg";
 import { VIOLATIONS_MAP } from "@/utils/violations-map";
 import useCopyToClipboard from "@/use/useCopyToClipboard";
@@ -77,8 +77,20 @@ const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
     `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
 }
 
+let intervalId = null;
+const setIntervalForFetchTableData = () => {
+  intervalId = setInterval(async () => {
+    await fetchTableData();
+  }, 60 * 1000);
+};
+
 onMounted(async () => {
   await fetchTableData();
+  setIntervalForFetchTableData();
+});
+
+onUnmounted(() => {
+  clearInterval(intervalId);
 });
 
 </script>
