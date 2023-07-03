@@ -73,9 +73,7 @@ async def get_miners_info(
         last_blocks = {m.pubkey: m.block_number for m in miners_by_risk}
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
         for pubkey, block_number in last_blocks.items():
-            print(pubkey, block_number)
             plagued_block = PlaguedBlock.get(number=block_number)
-            print(plagued_block.violations, plagued_block.last_violation)
             if plagued_block == None or plagued_block.violations == "" or plagued_block.last_violation == None:
                 continue
             violations_by_miner[pubkey].append(ViolationDisplayData(
