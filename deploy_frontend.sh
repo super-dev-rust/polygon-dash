@@ -20,7 +20,7 @@ fi
 
 # Move contents of build folder to Nginx www folder
 echo "Moving files to Nginx www folder..."
-mv build/* "$nginx_www_folder"
+mv dist/* "$nginx_www_folder"
 
 # Print success message
 echo "Deployment completed successfully!"
