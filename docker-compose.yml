@@ -3,8 +3,8 @@ services:
   backend:
     build: ./backend
     volumes:
-      - dbdata:/app/database.sqlite
-      - bordb:/app/bordb
+      - dbdata:/app/src/polydash/dbdata
+      - bordb:/app/src/polydash/bordb
     ports:
       - 5500:5500
   bor:
