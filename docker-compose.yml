@@ -6,7 +6,7 @@ services:
       - dbdata:/app/database.sqlite
       - bordb:/app/bordb
     ports:
-      - 8000:8000
+      - 5500:5500
   bor:
     image: shockedshodan/plaguedbor:latest
     command:
