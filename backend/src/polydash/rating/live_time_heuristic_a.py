@@ -64,8 +64,9 @@ def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
     upper_bound = block_timestamp
     query = TransactionFetched.select_by_sql("SELECT * FROM tx_fetched WHERE tx_first_seen > $lower_bound AND tx_first_seen < $upper_bound")
     LOGGER.debug("Querying pending transactions")
+    
     transactions = list(query)
-    LOGGER.debug("transactions length: ".format(len(transactions)))
+    LOGGER.debug("transactions length: {}".format(len(transactions)))
     if len(transactions) == 0:
         return None
     
@@ -119,7 +120,7 @@ def get_effective_tip(base_fee, gas_fee_cap, gas_fee_tip):
 def main_loop():
     while True:
         try:
-            time.sleep(60)
+            time.sleep(5)
             # get the block from some other thread
             (block_number, block_ts, block_hash, block_txs_d, base_fee, validated_by) = BlockPoolHeuristicQueue.get()
             with orm.db_session:
