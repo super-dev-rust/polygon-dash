@@ -1,38 +1,120 @@
 <script setup>
+import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
 import IconCopy from "@/assets/icons/icon-copy.svg";
-import { UNTRUSTED_NODES_MOCK} from "@/utils/mocks/home-dasboard-example";
 import { VIOLATIONS_MAP } from "@/utils/violations-map";
 import useCopyToClipboard from "@/use/useCopyToClipboard";
+import { useRequest } from "@/use/useRequest";
+import { fetchTable } from "@/api/api-client";
+
+const ORDER_MAP = {
+  ascending: 'asc',
+  descending: 'desc',
+};
+
+const { copyToClipboard } = useCopyToClipboard()
+const { sendRequest: getTable, isLoading, data, error } = useRequest(fetchTable)
 
 const violationsMap = Object.fromEntries(VIOLATIONS_MAP);
 
-const { copyToClipboard } = useCopyToClipboard()
+const tableData = ref([]);
+const totalTableEntriesCount = ref(1000);
+const tableState = reactive({
+  currentPage: 1,
+  pageSize: 10,
+});
+const tableSort = ref({});
+let timeoutId = null;
 
-function percentToHSL(percent) {
-  const hue = (percent / 100) * 120;
+const updateTableState = async (value, key) => {
+  tableState[key] = value;
+  console.log('tableState', tableState);
+  await fetchTableData();
+};
+const updateTableSort = async ({ prop, order }) => {
+  console.log('order_by', prop)
+  console.log('sort_order', order)
+  if (!order) {
+    tableSort.value = {};
+    await fetchTableData();
+    return;
+  }
+  tableSort.value.order_by = prop;
+  tableSort.value.sort_order = ORDER_MAP[order];
+  console.log('tableSort', tableSort.value);
+  await fetchTableData();
+};
+
+const checkIfCurrentPagePossible = computed( () => {
+  return tableState.currentPage <= Math.ceil(totalTableEntriesCount.value / tableState.pageSize);
+});
+
+const fetchTableData = async () => {
+  if (isLoading.value || !checkIfCurrentPagePossible.value) {
+    return
+  }
+  clearTimeout(timeoutId);
+  await getTable([{
+    page: tableState.currentPage,
+    pagesize: tableState.pageSize,
+    ...tableSort.value,
+  }])
+  if (error.value) {
+    console.log('error', error.value)
+    return
+  }
+  if (data.value) {
+    totalTableEntriesCount.value = data.value.total
+    tableData.value = [...data.value.data]
+  }
+  setTimeoutForFetchTableData();
+};
+
+const setTimeoutForFetchTableData = () => {
+  timeoutId = setTimeout(async () => {
+    await fetchTableData();
+  }, 10 * 1000);
+};
+
+const percentToHSL = (percent) => {
+  const hue = 120 - (percent / 100) * 120;
   return { 'color': `hsl(${hue}, 100%, 30%)` }
 }
+
+const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
+  return `${violationsMap[type].description}` +
+    `${last_violation ? `\nLast violation: ${last_violation}` : ''}` +
+    `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
+}
+
+onMounted(async () => {
+  await fetchTableData();
+});
+
+onUnmounted(() => {
+  clearTimeout(timeoutId);
+});
 
 </script>
 
 <template>
   <section class="home-dashboard">
     <el-table
-      :data="UNTRUSTED_NODES_MOCK"
-      :default-sort="{ prop: 'rank', order: 'descending' }"
+      :data="tableData"
+      v-loading="isLoading"
       class="home-dashboard__table"
+      @sort-change="updateTableSort"
     >
       <el-table-column
         prop="rank"
         label="Rank"
         width="90"
-        sortable
+        sortable="custom"
       />
       <el-table-column
-        label="Trust"
+        label="Risk"
         prop="score"
         width="90"
-        sortable
+        sortable="custom"
       >
         <template #default="{ row }">
           <span :style="percentToHSL(row.score)">
@@ -71,10 +153,10 @@ function percentToHSL(percent) {
         prop="blocks_created"
         label="Blocks"
         width="95"
-        sortable
+        sortable="custom"
       >
         <template #default="{ row }">
-          {{ row.blocks_created }}%
+          {{ (row.blocks_created * 100).toFixed(1) }}%
         </template>
       </el-table-column>
       <el-table-column
@@ -86,19 +168,19 @@ function percentToHSL(percent) {
         <template #default="{ row }">
           <el-tag
             v-for="(violation, index) in row.violations"
-            :key="index + violation"
+            :key="index + violation.type"
             class="home-dashboard__table-violation"
           >
             <el-tooltip
               effect="dark"
-              :content="violationsMap[violation].description"
+              :content="getViolationTooltip(violation)"
               placement="top"
               class="home-dashboard__table-violation-tooltip"
             >
               <div>
-                <component :is="violationsMap[violation].icon" />
+                <component :is="violationsMap[violation.type].icon" />
                 <div class="home-dashboard__table-violation-text">
-                  {{ violation }}
+                  {{ violation.type }}
                 </div>
               </div>
             </el-tooltip>
@@ -106,6 +188,18 @@ function percentToHSL(percent) {
         </template>
       </el-table-column>
     </el-table>
+    <el-pagination
+      v-if="tableData.length"
+      class="home-dashboard__pagination"
+      small
+      layout="prev, pager, next, jumper, sizes, total"
+      :total="totalTableEntriesCount"
+      :page-sizes="[10, 20, 30, 40]"
+      v-model:page-size="tableState.pageSize"
+      v-model:current-page="tableState.currentPage"
+      @size-change="updateTableState($event, 'pageSize')"
+      @current-change="updateTableState($event, 'currentPage')"
+    />
   </section>
 </template>
 
@@ -191,6 +285,12 @@ function percentToHSL(percent) {
         }
       }
     }
+  }
+
+  .home-dashboard__pagination {
+    margin-top: 1rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 0;
   }
 }
 </style>

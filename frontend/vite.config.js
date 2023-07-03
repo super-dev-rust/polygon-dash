@@ -9,7 +9,7 @@ import svgLoader from "vite-svg-loader";
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  base: '/guardian-dashboard/',
+  base: '/',
   plugins: [
       vue(),
       svgLoader(),

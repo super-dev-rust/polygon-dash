@@ -28,8 +28,23 @@ def test_complete_init_with_default_values(mock_db, client):
     MinerRisk.add_datapoint("ebf", 30)
     MinerRisk.add_datapoint("ebf", 15)
     MinerRisk.add_datapoint("abc", 20)
+    MinerRisk.add_datapoint("abc", 20)
+    MinerRisk.add_datapoint("foo", 20)
     response = client.get("/dash/miners")
     assert response.status_code == 200
+    assert response.json()['total'] == 3
     # assert response.json() == result
-    response = client.get("/dash/miners?order_by=numblocks&sort_order=desc")
-    print(response.content)
+
+    response = client.get("/dash/miners?order_by=rank&sort_order=asc")
+    assert [x['rank'] for x in response.json()['data']] == list(range(3))
+
+    response = client.get("/dash/miners?order_by=rank&sort_order=desc")
+    assert [x['rank'] for x in response.json()['data']] == list(reversed(range(3)))
+
+    # Risk score increasing -> rank (standing) increasing
+    response = client.get("/dash/miners?order_by=score&sort_order=asc")
+    print(response.json())
+    assert [x['rank'] for x in response.json()['data']] == list(range(3))
+
+    response = client.get("/dash/miners?order_by=score&sort_order=desc")
+    assert [x['rank'] for x in response.json()['data']] == list(reversed(range(3)))
