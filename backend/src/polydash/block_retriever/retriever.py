@@ -117,9 +117,9 @@ def retriever_thread():
                 for tx in block_txs:
                     block.transactions.add(Transaction(hash=tx[0], creator=tx[1], created=block_ts, block=block_number))
                 orm.commit()
-                BlockPoolHeuristicQueue.put((block_number, block_ts, block_hash, block_txs_d,
-                                             base_fee))  # put the block data to the Heuristic A Queue
                 EventQueue.put(block)  # put the block for the heuristics to be updated
+                BlockPoolHeuristicQueue.put((block_number, block_ts, block_hash, block_txs_d,
+                                             base_fee, fetched_block_author))  # put the block data to the Heuristic A Queue
             LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
                                                                                                block_hash))
 

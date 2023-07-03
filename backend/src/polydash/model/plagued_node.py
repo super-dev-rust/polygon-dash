@@ -39,3 +39,6 @@ class TransactionFetched(db_p2p.Entity):
     signer = orm.Optional(str)
     nonce = orm.Optional(str)
     
+class PlaguedNode(db.Entity):
+    pubkey = orm.PrimaryKey(str)
+    outliers = orm.Required(int)

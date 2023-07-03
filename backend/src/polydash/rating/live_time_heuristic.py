@@ -80,7 +80,7 @@ def main_loop():
                 process_transaction(author_node, tx)
             with orm.db_session:
                 author_node = Node.get(pubkey=block.validated_by)
-                MinerRisk.add_datapoint(block.validated_by, author_node.outliers)
+                MinerRisk.add_datapoint(block.validated_by, author_node.outliers, block.number)
         except Exception as e:
             LOGGER.error('exception when calculating the live-time mean&variance happened: {}'.format(str(e)))
 
