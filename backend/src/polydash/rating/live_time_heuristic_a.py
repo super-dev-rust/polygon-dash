@@ -6,7 +6,7 @@ from pony import orm
 
 from polydash.log import LOGGER
 from polydash.model.transaction_p2p import TransactionP2P
-from polydash.model.plagued_node import TransactionFetched, PlaguedBlock, PlaguedTransaction
+from polydash.model.plagued_node import TransactionFetched, PlaguedBlock, PlaguedTransactionFound, PlaguedTransactionMissing
 
 BlockPoolHeuristicQueue = queue.Queue()
 
@@ -19,38 +19,41 @@ GAS_PRICE = 30000000000
 @orm.db_session
 def process_block(block_number, block_hash, base_fee, block_timestamp, transactions):
     #Let's say txes below is all txes we should see in a block except local txes
-    LOGGER.debug("Processing block")
+    LOGGER.debug("Processing block: {}, {}".format(block_number, block_hash))
     print("transaction length: ", len(transactions))
     pending_txs = pending_transactions_by_price_and_nonce(block_timestamp, base_fee)
     if pending_txs is None:
         LOGGER.error("Could not get pending transactions")
         return
-    transactions_amount = len(transactions)
-    transactions_found = 0
-    plagued_block = PlaguedBlock(number=block_number, hash=block_hash, tx_missing_amount=0, tx_remote_total_amount=transactions_amount, tx_found_amount=0)
-    for signer_hash, tx_data in pending_txs.items():
-        violations = ""
-        if tx_data[0].tx_hash in transactions:
-            transactions_found += 1
-            tx_hash = tx_data[0].tx_hash
-            if tx_data[0].nonce != transactions[tx_hash]["nonce"]:
-                violations += "nonce "
-            effective_tip_block_tx = get_effective_tip(base_fee, transactions[tx_hash]["gas_fee_cap"], transactions[tx_hash]["gas_tip_cap"])
-            if tx_data[1] != effective_tip_block_tx:
-                violations += "effective_tip "
-                
-            plagued_block.txs_found.add(PlaguedTransaction(tx_hash=tx_hash, signer=signer_hash, 
-                                                           nonce=transactions[tx_hash]["nonce"], 
-                                                           miner_fee=str(effective_tip_block_tx), 
-                                                           violations=violations,
-                                                           block=block_number))
-            plagued_block.tx_missing_amount = transactions_amount - transactions_found
-            plagued_block.tx_found_amount = transactions_found
-            orm.commit()
+    
+    # later I should do something with this hashes
+    
+    transactions_found = []
+    transactions_missing = []
+    plagued_block = PlaguedBlock(number=block_number, hash=block_hash)
+    
+    for tx_hash, tx_data in transactions.items():
+        if tx_hash in pending_txs:
+            transactions_found.append(tx_hash)
+            gas_fee_cap_pool = int(pending_txs[tx_hash].gas_fee_cap, 16)
+            gas_tip_cap_pool = int(pending_txs[tx_hash].gas_tip_cap, 16)
+            miner_fee_block = get_effective_tip(base_fee, tx_data["gas_fee_cap"], tx_data["gas_tip_cap"])
+            miner_fee_pool = get_effective_tip(base_fee, gas_fee_cap_pool, gas_tip_cap_pool)
+            plagued_block.tx_found.add(PlaguedTransactionFound(tx_hash=tx_hash, signer=tx_data["from"], nonce=tx_data["nonce"], miner_fee_block=str(miner_fee_block), miner_fee_pool=str(miner_fee_pool), block=block_number))
+        else:
+            transactions_missing.append(tx_hash)
+            plagued_block.tx_missing.add(PlaguedTransactionMissing(tx_hash=tx_hash, signer=tx_data["from"], nonce=tx_data["nonce"], miner_fee_block=str(get_effective_tip(base_fee, tx_data["gas_fee_cap"], tx_data["gas_tip_cap"])), block=block_number))
+
+    if (len(transactions_missing) / len(transactions)) * 100 > 30:
+       plagued_block.violations = "injections"
+       plagued_block.violation_severity = 1
+       plagued_block.last_violation = block_timestamp
+
+    orm.commit()
+
         
 
 
-    
 @orm.db_session
 def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
     pending_txs = {}
@@ -59,8 +62,17 @@ def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
     query = TransactionFetched.select_by_sql("SELECT * FROM tx_fetched WHERE tx_first_seen > $lower_bound AND tx_first_seen < $upper_bound")
     LOGGER.debug("Querying pending transactions")
     transactions = list(query)
+    print("transactions length: ", len(transactions))
     if len(transactions) == 0:
         return None
+    
+    #until I figure how to fix go code to return transactions in order like it should be in block
+    # Txes ordered when they added from fetched to pending
+    # that's a slightly different task to be honest
+    # listen txes and store in db is not the same
+    # better will be to implement storing like in a block right in a bor.
+    return {transaction.tx_hash: transaction for transaction in reversed(transactions)}
+    
     for tx in transactions:
         # Convert nonce to integer
         nonce = int(tx.nonce)
@@ -73,16 +85,28 @@ def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
         if effective_tip < GAS_PRICE:
             continue 
         
-        if tx.signer not in pending_txs or int(pending_txs[tx.signer][0].nonce) < nonce:
-        # If signer is not in the groups yet or nonce is higher than existing transaction's nonce, add/replace the transaction
-            pending_txs[tx.signer] = (tx, effective_tip)
-    pending_transactions = list(pending_txs.values())
-    print("pending_transactions", len(pending_transactions))
-    # print("pending_transactions", pending_txs)
+        if tx.signer not in pending_txs:
+            pending_txs[tx.signer] = []
+        
+            # Check if this transaction hash already exists in the list for this signer
+        for existing_tx, _ in pending_txs[tx.signer]:
+            if existing_tx.tx_hash == tx.tx_hash:
+                break
+        else:
+            # If not, append the new transaction to the list
+            pending_txs[tx.signer].append((tx, effective_tip))
+            
+        # if tx.signer not in pending_txs or int(pending_txs[tx.signer][0].nonce) < nonce:
+        # # If signer is not in the groups yet or nonce is higher than existing transaction's nonce, add/replace the transaction
+        #     pending_txs[tx.signer] = (tx, effective_tip)
     return pending_txs
 
 
+
+
 def get_effective_tip(base_fee, gas_fee_cap, gas_fee_tip):
+    if gas_fee_cap == 0 or gas_fee_tip == 0:
+        return base_fee
     if gas_fee_cap < gas_fee_tip:
         return gas_fee_cap
     if gas_fee_cap - base_fee > gas_fee_tip or gas_fee_cap - base_fee == gas_fee_tip:
