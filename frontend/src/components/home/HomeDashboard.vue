@@ -85,7 +85,7 @@ const percentToHSL = (percent) => {
 
 const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
   return `${violationsMap[type].description}` +
-    `${last_violation ? `\nLast violation: ${last_violation}` : ''}` +
+    `${last_violation ? `\nLast violation: ${new Date(last_violation * 1000)}` : ''}` +
     `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
 }
 
