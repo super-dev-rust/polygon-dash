@@ -84,7 +84,7 @@ def get_block_author(number):
 def retriever_thread():
     LOGGER.info('block retrieved thread has started')
     # set to None to begin from the latest block; set to some block ID to begin with it
-    # next_block_number = 44563035
+    # next_block_number = 44562269
     next_block_number = None
     failure_count = 0
     while True:
@@ -119,7 +119,8 @@ def retriever_thread():
                 orm.commit()
                 EventQueue.put(block)  # put the block for the heuristics to be updated
                 BlockPoolHeuristicQueue.put((block_number, block_ts, block_hash, block_txs_d,
-                                             base_fee, fetched_block_author))  # put the block data to the Heuristic A Queue
+                                             base_fee,
+                                             fetched_block_author))  # put the block data to the Heuristic A Queue
             LOGGER.debug('retrieved and saved into DB block with number {} and hash {}'.format(block_number,
                                                                                                block_hash))
 
