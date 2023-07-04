@@ -48,7 +48,9 @@ def calculate_mean_variance(node_pubkey, tx_live_time):
 def process_transaction(author_node, tx):
     # find the transaction in the list of the ones seen by P2P
     with orm.db_session:
-        tx_p2p = TransactionP2P.get(tx_hash=tx.hash)
+        # Pony kept throwing exception at me with both generator and lambda select syntax, so raw SQL
+        tx_p2p = TransactionP2P.get_by_sql(
+            'SELECT * FROM tx_summary WHERE tx_hash="{}" ORDER BY tx_first_seen LIMIT 1'.format(tx.hash))
         if tx_p2p is None:
             # we haven't seen it
             return
