@@ -76,6 +76,9 @@ const setTimeoutForFetchTableData = () => {
 };
 
 const percentToHSL = (percent) => {
+  if (percent > 100) {
+    percent = 100;
+  }
   const hue = 120 - (percent / 100) * 120;
   return { 'color': `hsl(${hue}, 100%, 30%)` }
 }
@@ -111,14 +114,14 @@ onUnmounted(() => {
         sortable="custom"
       />
       <el-table-column
-        label="Risk"
+        label="Score"
         prop="score"
         width="90"
         sortable="custom"
       >
         <template #default="{ row }">
           <span :style="percentToHSL(row.score)">
-            {{ row.score }}%
+            {{ row.score }}
           </span>
         </template>
       </el-table-column>
