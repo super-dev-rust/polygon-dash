@@ -114,7 +114,7 @@ onUnmounted(() => {
         sortable="custom"
       />
       <el-table-column
-        label="Score"
+        label="Risk"
         prop="score"
         width="90"
         sortable="custom"
