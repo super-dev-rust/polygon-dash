@@ -50,17 +50,39 @@ class BlockViolationsData(BaseModel):
     amount: int # 1 for now
 
 
-class MinerDetailedBlocksData(BaseModel):
+class MinerBlocksData(BaseModel):
     block_number: int
     block_hash: str
     risk: int
     violations: List[BlockViolationsData]
 
 
-class MinerDetailedData(BaseModel):
-    data: List[MinerDetailedBlocksData]
-    total: int
+   # {label: [ListOfBlockNumbers], datasets: [{
+            #     label: "RiskScore",
+            #     backgroundColor: "#BEBEBE",
+            #     borderColor: "#BEBEBE",
+            #     stack: "combined",
+            #     fill: false,
+            #     order: 0,
+            #     data: [ListOfRiskScores]
+            #},{
 
+class MinerChartDataset(BaseModel):
+    fill: bool
+    order: int
+    type: str
+    label: str
+    borderColor: str
+    stack: str
+    backgroundColor: str
+    data: List[int]
+    tension: str
+
+class MinerChartData(BaseModel):
+    labels: List[str]
+    datasets: List[MinerChartDataset]
+    blocks_data: List[MinerBlocksData]
+    total: int
 
 class DashboardData(BaseModel):
     data: List[MinerDisplayData]
@@ -139,7 +161,7 @@ async def get_miners_info(
 
 
 @router.get("/miners/{address}")
-async def get_miner_info(address: str, last_blocks: int = 50) -> MinerDetailedData:
+async def get_miner_info(address: str, last_blocks: int = 50) -> MinerChartData:
     with db_session():
         
         miner = MinerRisk.get(pubkey=address)
@@ -148,10 +170,13 @@ async def get_miner_info(address: str, last_blocks: int = 50) -> MinerDetailedDa
 
         blocks_history = MinerRiskHistory.select_by_sql("SELECT * FROM MinerRiskHistory WHERE pubkey = $address ORDER BY block_number DESC LIMIT $last_blocks")        
         if not blocks_history:
-            return MinerDetailedData(data=[], total=0)
+            return MinerChartData(labels=[], datasets=[], blocks_data=[])
         
-        detailed_blocks = []
-
+        labels = []
+        risk_data = []
+        violations_data = []
+        blocks_data = []
+        datasets = []
         for block in list(blocks_history):
             plagued_block = PlaguedBlock.get(number=block.block_number)
             if plagued_block is not None:
@@ -162,16 +187,69 @@ async def get_miner_info(address: str, last_blocks: int = 50) -> MinerDetailedDa
                     BlockViolationsData(
                         type=plagued_block.violations,
                         color="#D22B2B",
-                        amount=1
+                        amount=int(plagued_block.violations != "")
                     )
                 ]
-                detailed_blocks.append(
-                    MinerDetailedBlocksData(
+                # Populate blocks data for now, maybe it will be used later
+                blocks_data.append(
+                    MinerBlocksData(
                         block_number=block.block_number,
                         block_hash=plagued_block.hash,
                         risk=block.risk,
                         violations=violations
                     )
                 )
+                # Populate labels(block numbers as strings) for chart
+                labels.append(str(block.block_number))
+                # Populate risk_data for chart
+                risk_data.append(
+                    block.risk
+                )
+                # Populate violations_data for chart
+                violations_data.append(
+                    int(plagued_block.violations != "")
+                    )
        
-        return MinerDetailedData(data=detailed_blocks, total=len(detailed_blocks))
+       
+        datasets.append(
+            MinerChartDataset(
+                fill=False,
+                order=0,
+                type="",
+                label="Risk Score",
+                borderColor="#798EA4",
+                stack="combined",
+                backgroundColor="#798EA4",
+                data=risk_data,
+                tension=""
+            )
+        )
+        
+        datasets.append(
+             MinerChartDataset(
+                fill=False,
+                order=1,
+                type="",
+                label="Violations",
+                borderColor="#CD212A",
+                stack="combined",
+                backgroundColor="#CD212A",
+                data=risk_data,
+                tension=""
+            )
+        )
+        datasets.append(
+             MinerChartDataset(
+                fill=False,
+                order=2,
+                type="line",
+                label="Risk Score Line",
+                borderColor="#FA7A35",
+                stack="combined",
+                backgroundColor="#CD212A",
+                data=risk_data,
+                tension="0.5"
+            )
+        )
+
+        return MinerChartData(labels=labels, datasets=datasets, blocks_data=blocks_data, total=len(blocks_data))
