@@ -189,7 +189,7 @@ async def get_miner_info(address: str, last_blocks: int = 50) -> MinerChartData:
                     BlockViolationsData(
                         type=plagued_block.violations,
                         color="#D22B2B",
-                        amount=int(plagued_block.violations != "")
+                        amount=int(plagued_block.violations != "") * 100
                     )
                 ]
                 # Populate blocks data for now, maybe it will be used later
