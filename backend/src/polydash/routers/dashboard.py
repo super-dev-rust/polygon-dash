@@ -209,7 +209,7 @@ async def get_miner_info(address: str, last_blocks: int = 50) -> MinerChartData:
                 )
                 # Populate violations_data for chart
                 violations_data.append(
-                    int(plagued_block.violations != "")
+                    int(plagued_block.violations != "") * 100
                     )
        
        
