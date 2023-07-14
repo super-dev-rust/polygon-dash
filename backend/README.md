@@ -19,3 +19,11 @@ Polydash uses Poetry dependency manager.
     ```shell
     python -m polydash
     ```
+
+
+## Testing
+For testing is used Pytest
+
+To test you should call tests manually, something like 
+`pytest -s tests/test_dashboard_api.py::test_miner_detailed_endpoint`
+
