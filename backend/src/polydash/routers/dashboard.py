@@ -161,7 +161,7 @@ async def get_miners_info(
 
 
 @router.get("/miners/{address}")
-async def get_miner_info(address: str, last_blocks: int = 50) -> MinerChartData:
+async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData:
     with db_session():
         
         miner = MinerRisk.get(pubkey=address)
@@ -180,11 +180,11 @@ async def get_miner_info(address: str, last_blocks: int = 50) -> MinerChartData:
         datasets = []
         for block in list(blocks_history):
             plagued_block = PlaguedBlock.get(number=block.block_number)
-            LOGGER.debug("Plagued block: %s", plagued_block)
             if plagued_block is not None:
                 #TODO:there should be a function that parse violations string
                 # and return a list of violations prepared for MinerDetailedBlocksData
                 # for now only one violation is supported
+                LOGGER.debug("Plagued block: %s", plagued_block.violations)
                 violations = [
                     BlockViolationsData(
                         type=plagued_block.violations,
