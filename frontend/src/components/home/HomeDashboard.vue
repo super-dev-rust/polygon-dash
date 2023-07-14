@@ -1,18 +1,20 @@
 <script setup>
-import {computed, onMounted, onUnmounted, reactive, ref} from "vue";
-import IconCopy from "@/assets/icons/icon-copy.svg";
-import { VIOLATIONS_MAP } from "@/utils/violations-map";
-import useCopyToClipboard from "@/use/useCopyToClipboard";
-import { useRequest } from "@/use/useRequest";
-import { fetchTable } from "@/api/api-client";
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import IconCopy from '@/assets/icons/icon-copy.svg';
+import { VIOLATIONS_MAP } from '@/utils/violations-map';
+import useCopyToClipboard from '@/use/useCopyToClipboard';
+import { useRequest } from '@/use/useRequest';
+import { fetchTable } from '@/api/api-client';
 
 const ORDER_MAP = {
   ascending: 'asc',
   descending: 'desc',
 };
 
-const { copyToClipboard } = useCopyToClipboard()
-const { sendRequest: getTable, isLoading, data, error } = useRequest(fetchTable)
+const router = useRouter();
+const { copyToClipboard } = useCopyToClipboard();
+const { sendRequest: getTable, isLoading, data, error } = useRequest(fetchTable);
 
 const violationsMap = Object.fromEntries(VIOLATIONS_MAP);
 
@@ -31,8 +33,6 @@ const updateTableState = async (value, key) => {
   await fetchTableData();
 };
 const updateTableSort = async ({ prop, order }) => {
-  console.log('order_by', prop)
-  console.log('sort_order', order)
   if (!order) {
     tableSort.value = {};
     await fetchTableData();
@@ -44,27 +44,27 @@ const updateTableSort = async ({ prop, order }) => {
   await fetchTableData();
 };
 
-const checkIfCurrentPagePossible = computed( () => {
+const checkIfCurrentPagePossible = computed(() => {
   return tableState.currentPage <= Math.ceil(totalTableEntriesCount.value / tableState.pageSize);
 });
 
 const fetchTableData = async () => {
   if (isLoading.value || !checkIfCurrentPagePossible.value) {
-    return
+    return;
   }
   clearTimeout(timeoutId);
   await getTable([{
     page: tableState.currentPage,
     pagesize: tableState.pageSize,
     ...tableSort.value,
-  }])
+  }]);
   if (error.value) {
-    console.log('error', error.value)
-    return
+    console.log('error', error.value);
+    return;
   }
   if (data.value) {
-    totalTableEntriesCount.value = data.value.total
-    tableData.value = [...data.value.data]
+    totalTableEntriesCount.value = data.value.total;
+    tableData.value = [...data.value.data];
   }
   setTimeoutForFetchTableData();
 };
@@ -80,14 +80,17 @@ const percentToHSL = (percent) => {
     percent = 100;
   }
   const hue = 120 - (percent / 100) * 120;
-  return { 'color': `hsl(${hue}, 100%, 30%)` }
-}
+  return { 'color': `hsl(${hue}, 100%, 30%)` };
+};
 
 const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
   return `${violationsMap[type].description}` +
     `${last_violation ? `\nLast violation: ${new Date(last_violation * 1000)}` : ''}` +
-    `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
-}
+    `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`;
+};
+const navigateToMinerPage = ({ address }) => {
+  router.push({ name: 'miner', params: { address } });
+};
 
 onMounted(async () => {
   await fetchTableData();
@@ -131,12 +134,15 @@ onUnmounted(() => {
       >
         <template #default="{ row }">
           <div class="home-dashboard__table-address">
-            <div class="home-dashboard__table-address-text">
+            <a
+              @click="navigateToMinerPage(row)"
+              class="home-dashboard__table-address-text"
+            >
               {{ row.address }}
-            </div>
+            </a>
             <IconCopy
               class="home-dashboard__table-address-copy"
-              @click="copyToClipboard(row.address)"
+              @click.stop="copyToClipboard(row.address)"
             />
           </div>
         </template>
@@ -181,7 +187,7 @@ onUnmounted(() => {
               class="home-dashboard__table-violation-tooltip"
             >
               <div>
-                <component :is="violationsMap[violation.type].icon" />
+                <component :is="violationsMap[violation.type].icon"/>
                 <div class="home-dashboard__table-violation-text">
                   {{ violation.type }}
                 </div>
@@ -237,10 +243,12 @@ onUnmounted(() => {
         white-space: nowrap;
         text-overflow: ellipsis;
         overflow: hidden;
+        cursor: pointer;
+        text-decoration: underline;
       }
 
       .home-dashboard__table-address-copy {
-        cursor: pointer;
+        cursor: copy;
         margin-left: 0.2rem;
       }
     }
@@ -256,6 +264,7 @@ onUnmounted(() => {
         display: flex;
         flex-flow: row wrap;
         gap: 0.4rem;
+
         .el-tag {
           --el-tag-text-color: var(--color-text-danger);
           --el-tag-bg-color: var(--color-background-danger);
@@ -269,12 +278,12 @@ onUnmounted(() => {
       font-weight: 500;
       cursor: help;
 
-      .home-dashboard__table-violation-text{
+      .home-dashboard__table-violation-text {
         display: none;
       }
 
       @media (min-width: 1050px) {
-        .home-dashboard__table-violation-text{
+        .home-dashboard__table-violation-text {
           display: inline-block;
           height: 100%;
         }
