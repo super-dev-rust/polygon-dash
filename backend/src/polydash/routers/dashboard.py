@@ -172,6 +172,7 @@ async def get_miner_info(address: str, last_blocks: int = 50) -> MinerChartData:
         if not blocks_history:
             return MinerChartData(labels=[], datasets=[], blocks_data=[])
         
+        LOGGER.debug("Blocks history: %s", blocks_history)
         labels = []
         risk_data = []
         violations_data = []
@@ -179,6 +180,7 @@ async def get_miner_info(address: str, last_blocks: int = 50) -> MinerChartData:
         datasets = []
         for block in list(blocks_history):
             plagued_block = PlaguedBlock.get(number=block.block_number)
+            LOGGER.debug("Plagued block: %s", plagued_block)
             if plagued_block is not None:
                 #TODO:there should be a function that parse violations string
                 # and return a list of violations prepared for MinerDetailedBlocksData
