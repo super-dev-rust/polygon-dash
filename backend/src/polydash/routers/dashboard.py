@@ -184,7 +184,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 #TODO:there should be a function that parse violations string
                 # and return a list of violations prepared for MinerDetailedBlocksData
                 # for now only one violation is supported
-                LOGGER.debug("Plagued block: %s", plagued_block.violations)
+                LOGGER.debug("Plagued block: %s", int(plagued_block.violations != ""))
                 violations = [
                     BlockViolationsData(
                         type=plagued_block.violations,
