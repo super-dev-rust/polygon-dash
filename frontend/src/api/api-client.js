@@ -9,6 +9,8 @@ const apiClient = axios.create({
 
 const ENDPOINTS = {
   FETCH_TABLE: `/dash/miners`,
+  FETCH_MINER: (address) => `/dash/miners/${address}`,
 }
 
 export const fetchTable = (args) => apiClient.get(ENDPOINTS.FETCH_TABLE, { params: args })
+export const fetchMiner = (address) => apiClient.get(ENDPOINTS.FETCH_MINER(address))
