@@ -1,9 +1,11 @@
 <script setup>
-import MinerDashboard from "@/components/miner/MinerDashboard.vue";
+import MinerContent from '@/components/miner/MinerContent.vue';
+import MinerDashboard from '@/components/miner/MinerDashboard.vue';
 </script>
 
 <template>
   <main>
+    <MinerContent />
     <MinerDashboard />
   </main>
 </template>

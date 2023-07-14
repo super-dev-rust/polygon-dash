@@ -1,20 +1,20 @@
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router'
-import IconCopy from "@/assets/icons/icon-copy.svg";
-import { VIOLATIONS_MAP } from "@/utils/violations-map";
-import useCopyToClipboard from "@/use/useCopyToClipboard";
-import { useRequest } from "@/use/useRequest";
-import { fetchTable } from "@/api/api-client";
+import { useRouter } from 'vue-router';
+import IconCopy from '@/assets/icons/icon-copy.svg';
+import { VIOLATIONS_MAP } from '@/utils/violations-map';
+import useCopyToClipboard from '@/use/useCopyToClipboard';
+import { useRequest } from '@/use/useRequest';
+import { fetchTable } from '@/api/api-client';
 
 const ORDER_MAP = {
   ascending: 'asc',
   descending: 'desc',
 };
 
-const router = useRouter()
-const {copyToClipboard} = useCopyToClipboard()
-const {sendRequest: getTable, isLoading, data, error} = useRequest(fetchTable)
+const router = useRouter();
+const { copyToClipboard } = useCopyToClipboard();
+const { sendRequest: getTable, isLoading, data, error } = useRequest(fetchTable);
 
 const violationsMap = Object.fromEntries(VIOLATIONS_MAP);
 
@@ -32,9 +32,7 @@ const updateTableState = async (value, key) => {
   console.log('tableState', tableState);
   await fetchTableData();
 };
-const updateTableSort = async ({prop, order}) => {
-  console.log('order_by', prop)
-  console.log('sort_order', order)
+const updateTableSort = async ({ prop, order }) => {
   if (!order) {
     tableSort.value = {};
     await fetchTableData();
@@ -52,21 +50,21 @@ const checkIfCurrentPagePossible = computed(() => {
 
 const fetchTableData = async () => {
   if (isLoading.value || !checkIfCurrentPagePossible.value) {
-    return
+    return;
   }
   clearTimeout(timeoutId);
   await getTable([{
     page: tableState.currentPage,
     pagesize: tableState.pageSize,
     ...tableSort.value,
-  }])
+  }]);
   if (error.value) {
-    console.log('error', error.value)
-    return
+    console.log('error', error.value);
+    return;
   }
   if (data.value) {
-    totalTableEntriesCount.value = data.value.total
-    tableData.value = [...data.value.data]
+    totalTableEntriesCount.value = data.value.total;
+    tableData.value = [...data.value.data];
   }
   setTimeoutForFetchTableData();
 };
@@ -82,18 +80,17 @@ const percentToHSL = (percent) => {
     percent = 100;
   }
   const hue = 120 - (percent / 100) * 120;
-  return {'color': `hsl(${hue}, 100%, 30%)`}
-}
+  return { 'color': `hsl(${hue}, 100%, 30%)` };
+};
 
-const getViolationTooltip = ({type, last_violation, violation_severity}) => {
+const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
   return `${violationsMap[type].description}` +
     `${last_violation ? `\nLast violation: ${new Date(last_violation * 1000)}` : ''}` +
-    `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`
-}
-const navigateToMinerPage = ({address}) => {
-  console.log('navigateToMinerPage', address)
-  router.push({name: 'miner', params: {address}})
-}
+    `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`;
+};
+const navigateToMinerPage = ({ address }) => {
+  router.push({ name: 'miner', params: { address } });
+};
 
 onMounted(async () => {
   await fetchTableData();
@@ -251,7 +248,7 @@ onUnmounted(() => {
       }
 
       .home-dashboard__table-address-copy {
-        cursor: pointer;
+        cursor: copy;
         margin-left: 0.2rem;
       }
     }
