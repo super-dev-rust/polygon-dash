@@ -185,6 +185,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 # and return a list of violations prepared for MinerDetailedBlocksData
                 # for now only one violation is supported
                 LOGGER.debug("Plagued block: %s", int(plagued_block.violations != ""))
+                LOGGER.debug("Plagued block violations len: %s", len(plagued_block.violations))
                 violations = [
                     BlockViolationsData(
                         type=plagued_block.violations,
