@@ -120,7 +120,6 @@ def get_effective_tip(base_fee, gas_fee_cap, gas_fee_tip):
 def main_loop():
     while True:
         try:
-            time.sleep(5)
             # get the block from some other thread
             (block_number, block_ts, block_hash, block_txs_d, base_fee, validated_by) = BlockPoolHeuristicQueue.get()
             with orm.db_session:
