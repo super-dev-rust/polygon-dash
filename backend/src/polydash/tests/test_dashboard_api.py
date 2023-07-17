@@ -14,16 +14,6 @@ from polydash.routers.dashboard import router
 VIOLATIONS = ("injections", "censoring", "reordering", "")
 
 
-# class PlaguedBlock(db.Entity):
-#     number = orm.PrimaryKey(int)
-#     hash = orm.Required(str)
-#     violations = orm.Optional(str)  # injections, censoring, reordering
-#     tx_missing = orm.Set(PlaguedTransactionMissing)
-#     tx_found = orm.Set(PlaguedTransactionFound)
-#     last_violation = orm.Optional(int)
-#     violation_severity = orm.Optional(int)
-
-
 def add_mock_datapoint_with_mock_block(miner, block_number):
     random_violation = random.choice(VIOLATIONS)
     score = 1

@@ -13,4 +13,4 @@ const ENDPOINTS = {
 }
 
 export const fetchTable = (args) => apiClient.get(ENDPOINTS.FETCH_TABLE, { params: args })
-export const fetchMiner = (address) => apiClient.get(ENDPOINTS.FETCH_MINER(address))
+export const fetchMiner = ({ address, params }) => apiClient.get(ENDPOINTS.FETCH_MINER(address), { params })
