@@ -8,6 +8,7 @@ from polydash.model.block_p2p import BlockP2P
 from polydash.model.transaction_p2p import TransactionP2P
 from polydash.model.deanon_node_by_tx import DeanonNodeByTx
 from polydash.model.deanon_node_by_block import DeanonNodeByBlock
+from polydash.model.peer_to_ip import PeerToIP
 
 DeanonymizerQueue = queue.Queue()
 
@@ -18,12 +19,35 @@ def calculate_confidence_by_block(block):
     Increase the confidence of the relation between the peer, from which
     we first saw this block, and the creator of this block
     """
-    block_from_p2p = BlockP2P.get(block_hash=block.hash)
+    block_from_p2p = BlockP2P.get_by_sql(
+        'SELECT * FROM block_fetched WHERE block_hash="{}" ORDER BY first_seen_ts LIMIT 1'.format(
+            block.hash
+        )
+    )
     if block_from_p2p is None:
         # we haven't seen this block over P2P, nothing can be done
         return
 
-    # TODO: when this information is available, we increase the confidence using the 'from' field from BlockP2P
+    deanon_node = DeanonNodeByBlock.get(
+        signer_key=block.validated_by, peer_id=block_from_p2p.peer
+    )
+    if deanon_node is None:
+        # no such node is remembered by us yet, create it
+        deanon_node = DeanonNodeByBlock(
+            signer_key=block.validated_by, peer_id=block_from_p2p.peer, confidence=1
+        )
+    else:
+        # just increase the confidence of this mapping
+        deanon_node.confidence += 1
+
+    # also put the information about IP of this peer into the DB if we don't remember it already
+    peer_ip = PeerToIP.get(
+        peer_id=block_from_p2p.peer, ip=block_from_p2p.peer_remote_addr
+    )
+    if peer_ip is None:
+        peer_ip = PeerToIP(
+            peer_id=block_from_p2p.peer, ip=block_from_p2p.peer_remote_addr
+        )
 
 
 @orm.db_session

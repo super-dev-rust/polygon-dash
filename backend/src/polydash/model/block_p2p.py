@@ -8,4 +8,6 @@ class BlockP2P(db_p2p.Entity):
     block_hash = orm.Optional(str)
     block_number = orm.Optional(int)
     first_seen_ts = orm.Optional(int)
-    # from = orm.Optional(str)
+    peer = orm.Optional(str)
+    peer_remote_addr = orm.Optional(str)
+    peer_local_addr = orm.Optional(str)
