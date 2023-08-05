@@ -1,23 +1,26 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import node, block, dashboard
+from .routers import node, block, dashboard, deanon
 from .db import start_db
 from .block_retriever.retriever import start_retriever
 from .rating.live_time_heuristic import start_live_time_heuristic
 from .rating.live_time_heuristic_a import start_live_time_heuristic_a
+from .deanonymize.deanonymizer import start_deanonymizer
 
 # Modules set up
 start_db()
 start_retriever()
 start_live_time_heuristic()
 start_live_time_heuristic_a()
+start_deanonymizer()
 
 # FastAPI set up
 app = FastAPI()
 app.include_router(node.router)
 app.include_router(block.router)
 app.include_router(dashboard.router)
+app.include_router(deanon.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins
