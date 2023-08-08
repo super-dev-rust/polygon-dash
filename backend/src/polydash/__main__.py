@@ -3,11 +3,12 @@ import yaml
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from polydash.settings import PolydashSettings
-from polydash.routers import node, block, dashboard, deanon
+from polydash.routers import node, block, dashboard, deanon, transaction_risk
 from polydash.db import start_db
 from polydash.block_retriever.retriever import BlockRetriever
 from polydash.rating.live_time_heuristic import start_live_time_heuristic
 from polydash.rating.live_time_heuristic_a import start_live_time_heuristic_a
+from polydash.rating.live_time_transaction import start_live_time_transaction_heuristic
 from polydash.deanonymize.deanonymizer import start_deanonymizer
 import click
 
@@ -17,6 +18,7 @@ app.include_router(node.router)
 app.include_router(block.router)
 app.include_router(dashboard.router)
 app.include_router(deanon.router)
+app.include_router(transaction_risk.router)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins
@@ -44,6 +46,7 @@ def start(settings) -> PolydashSettings:
     start_live_time_heuristic()
     start_live_time_heuristic_a()
     start_deanonymizer()
+    start_live_time_transaction_heuristic()
 
     uvicorn.run(app, host=s.host, port=s.port)
 
