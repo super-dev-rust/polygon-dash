@@ -19,35 +19,18 @@ def calculate_confidence_by_block(block):
     Increase the confidence of the relation between the peer, from which
     we first saw this block, and the creator of this block
     """
-    block_from_p2p = BlockP2P.get_by_sql(
-        'SELECT * FROM block_fetched WHERE block_hash="{}" ORDER BY first_seen_ts LIMIT 1'.format(
-            block.hash
-        )
-    )
-    if block_from_p2p is None:
+    if block_from_p2p := BlockP2P.get_first_by_hash(block.hash) is None:
         # we haven't seen this block over P2P, nothing can be done
         return
 
-    deanon_node = DeanonNodeByBlock.get(
-        signer_key=block.validated_by, peer_id=block_from_p2p.peer
-    )
-    if deanon_node is None:
-        # no such node is remembered by us yet, create it
-        deanon_node = DeanonNodeByBlock(
-            signer_key=block.validated_by, peer_id=block_from_p2p.peer, confidence=1
-        )
-    else:
-        # just increase the confidence of this mapping
-        deanon_node.confidence += 1
+    # if no such node is remembered by us yet, create it
+    deanon_node = DeanonNodeByBlock.get_or_insert(
+        signer_key=block.validated_by, peer_id=block_from_p2p.peer)
+    # just increase the confidence of this mapping
+    deanon_node.confidence += 1
 
     # also put the information about IP of this peer into the DB if we don't remember it already
-    peer_ip = PeerToIP.get(
-        peer_id=block_from_p2p.peer, ip=block_from_p2p.peer_remote_addr
-    )
-    if peer_ip is None:
-        peer_ip = PeerToIP(
-            peer_id=block_from_p2p.peer, ip=block_from_p2p.peer_remote_addr
-        )
+    PeerToIP.get_or_insert(peer_id=block_from_p2p.peer, ip=block_from_p2p.peer_remote_addr)
 
 
 @orm.db_session
@@ -57,26 +40,14 @@ def calculate_confidence_by_tx(block):
     we first saw transactions from this block, and the creator of this block
     """
     for tx in block.transactions:
-        tx_p2p = TransactionP2P.get_by_sql(
-            'SELECT * FROM tx_summary WHERE tx_hash="{}" ORDER BY tx_first_seen LIMIT 1'.format(
-                tx.hash
-            )
-        )
-        if tx_p2p is None:
+        if tx_p2p := TransactionP2P.get_first_by_hash(tx.hash) is None:
             # we haven't seen it
             return
 
-        deanon_node = DeanonNodeByTx.get(
-            signer_key=block.validated_by, peer_id=tx_p2p.peer_id
-        )
-        if deanon_node is None:
-            # no such node is remembered by us yet, create it
-            deanon_node = DeanonNodeByTx(
-                signer_key=block.validated_by, peer_id=tx_p2p.peer_id, confidence=1
-            )
-        else:
-            # just increase the confidence of this mapping
-            deanon_node.confidence += 1
+        # if there is no such node is remembered by us yet, create it
+        # and just increase the confidence of this mapping
+        DeanonNodeByTx.get_or_insert(
+            signer_key=block.validated_by, peer_id=tx_p2p.peer_id).confidence += 1
 
 
 def main_loop():
@@ -87,6 +58,7 @@ def main_loop():
 
             calculate_confidence_by_block(block)
             calculate_confidence_by_tx(block)
+
         except Exception as e:
             LOGGER.error(
                 "exception when calculating the deanonymizer confidence happened: {}".format(

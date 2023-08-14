@@ -1,5 +1,6 @@
 alchemy_token.txt
 database.sqlite
+settings.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

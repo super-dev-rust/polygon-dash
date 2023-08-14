@@ -3,6 +3,7 @@ import threading
 import math
 
 from pony import orm
+from pony.orm import select
 
 from polydash.log import LOGGER
 from polydash.model.node import Node
@@ -49,9 +50,7 @@ def process_transaction(author_node, tx):
     # find the transaction in the list of the ones seen by P2P
     with orm.db_session:
         # Pony kept throwing exception at me with both generator and lambda select syntax, so raw SQL
-        tx_p2p = TransactionP2P.get_by_sql(
-            'SELECT * FROM tx_summary WHERE tx_hash="{}" ORDER BY tx_first_seen LIMIT 1'.format(tx.hash))
-        if tx_p2p is None:
+        if tx_p2p := TransactionP2P.get_first_by_hash(tx.hash) is None:
             # we haven't seen it
             return
 

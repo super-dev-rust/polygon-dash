@@ -1,6 +1,7 @@
 from pony import orm
 from pony.orm import db_session
-from polydash.db import db_p2p, db
+from polydash.db import db
+from polydash.model import GetOrInsertMixin
 
 
 class PlaguedTransactionFound(db.Entity):
@@ -45,9 +46,9 @@ class PlaguedBlock(db.Entity):
         return plagued_block
 
 
-class TransactionFetched(db_p2p.Entity):
+class TransactionFetched(db.Entity):
     _table_ = "tx_fetched"
-    id = orm.PrimaryKey(int)
+    id = orm.PrimaryKey(int, auto=True)
     tx_hash = orm.Optional(str)
     tx_fee = orm.Optional(str)
     gas_fee_cap = orm.Optional(str)
@@ -58,6 +59,6 @@ class TransactionFetched(db_p2p.Entity):
     nonce = orm.Optional(str)
 
 
-class PlaguedNode(db.Entity):
+class PlaguedNode(db.Entity, GetOrInsertMixin):
     pubkey = orm.PrimaryKey(str)
-    outliers = orm.Required(int)
+    outliers = orm.Optional(int, default=0)
