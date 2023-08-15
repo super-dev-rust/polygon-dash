@@ -1,9 +1,10 @@
 from pony import orm
 from pydantic import BaseModel
 from polydash.db import db
+from polydash.model import GetOrInsertMixin
 
 
-class DeanonNodeByTx(db.Entity):
+class DeanonNodeByTx(db.Entity, GetOrInsertMixin):
     id = orm.PrimaryKey(int, auto=True)
     signer_key = orm.Required(str)
     peer_id = orm.Required(str)
