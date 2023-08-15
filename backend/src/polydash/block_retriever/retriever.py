@@ -13,6 +13,7 @@ from polydash.rating.live_time_heuristic import EventQueue
 from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 from polydash.deanonymize.deanonymizer import DeanonymizerQueue
 from polydash.settings import BlockRetrieverSettings
+from polydash.rating.live_time_transaction import TransactionEventQueue
 
 alchemy_token = ""
 
@@ -89,7 +90,7 @@ class BlockRetriever:
     def retriever_thread(self):
         self.__logger.info("block retrieved thread has started")
         # set to None to begin from the latest block; set to some block ID to begin with it
-        # next_block_number = 45784564
+        # next_block_number = 44563210
         next_block_number = 0
         failure_count = 0
         while True:
@@ -162,6 +163,9 @@ class BlockRetriever:
                     DeanonymizerQueue.put(
                         block
                     )  # put the block for the deanon process to work
+                    TransactionEventQueue.put(
+                        block
+                    )  # put the block for the Transaction Risks to work
                 self.__logger.debug(
                     "retrieved and saved into DB block with number {} and hash {}".format(
                         block_number, block_hash
