@@ -1,6 +1,7 @@
 import queue
 import threading
 import math
+import traceback
 
 from pony import orm
 from pony.orm import select
@@ -83,6 +84,7 @@ def main_loop():
                 author_node = Node.get(pubkey=block.validated_by)
                 MinerRisk.add_datapoint(block.validated_by, author_node.outliers, block.number)
         except Exception as e:
+            traceback.print_exc()
             LOGGER.error('exception when calculating the live-time mean&variance happened: {}'.format(str(e)))
 
 

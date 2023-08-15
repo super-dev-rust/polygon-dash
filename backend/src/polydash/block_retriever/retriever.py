@@ -1,3 +1,5 @@
+import traceback
+
 import requests
 import json
 import threading
@@ -88,7 +90,7 @@ class BlockRetriever:
         self.__logger.info("block retrieved thread has started")
         # set to None to begin from the latest block; set to some block ID to begin with it
         # next_block_number = 45784564
-        next_block_number = None
+        next_block_number = 0
         failure_count = 0
         while True:
             if failure_count > 3:
@@ -170,6 +172,8 @@ class BlockRetriever:
                 failure_count = 0
             except Exception as e:
                 failure_count += 1
+                # TODO: instead redo the logger to save tracebacks
+                traceback.print_exc()
                 self.__logger.error("exception when retrieving block happened: {}".format(e))
             time.sleep(2)
 

@@ -1,5 +1,6 @@
 import queue
 import threading
+import traceback
 
 from pony import orm
 
@@ -60,6 +61,7 @@ def main_loop():
             calculate_confidence_by_tx(block)
 
         except Exception as e:
+            traceback.print_exc()
             LOGGER.error(
                 "exception when calculating the deanonymizer confidence happened: {}".format(
                     str(e)

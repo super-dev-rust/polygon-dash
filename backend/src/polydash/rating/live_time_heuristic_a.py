@@ -1,5 +1,7 @@
 import queue
 import threading
+import traceback
+
 from pony import orm
 
 from polydash.log import LOGGER
@@ -131,6 +133,7 @@ def main_loop():
                 author_node = Node.get(pubkey=validated_by)
                 process_block(block_number, block_hash, base_fee, block_ts, block_txs_d, author_node, plagued_node)
         except Exception as e:
+            traceback.print_exc()
             LOGGER.error(
                 "exception when calculating heuristic-a happened: {}".format(
                     str(e)
