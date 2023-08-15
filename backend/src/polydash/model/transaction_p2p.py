@@ -7,7 +7,7 @@ from polydash.model import GetOrInsertMixin
 
 class TransactionP2P(db.Entity, GetOrInsertMixin):
     _table_ = 'tx_summary'
-    tx_hash = orm.Required(str)
+    tx_hash = orm.Required(str, index=True)
     peer_id = orm.Required(str)
     PrimaryKey(tx_hash, peer_id)
     tx_first_seen = orm.Optional(int)
