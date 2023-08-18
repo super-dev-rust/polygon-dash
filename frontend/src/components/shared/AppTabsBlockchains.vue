@@ -50,6 +50,7 @@ const handleBlockchainSelection = (name) => {
   border: 1px solid $gray-200;
   padding: 0.25rem;
   border-radius: 0.5rem;
+  max-width: 27.5rem;
 
   .app-tabs__button {
     border: none;

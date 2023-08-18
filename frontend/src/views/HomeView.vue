@@ -1,11 +1,11 @@
 <script setup>
-import HomeContent from "@/components/home/HomeContent.vue";
+import HomeContentRouter from "@/components/home/HomeContentRouter.vue";
 import HomeDashboard from "@/components/home/HomeDashboard.vue";
 </script>
 
 <template>
   <main>
-    <HomeContent />
+    <HomeContentRouter />
     <HomeDashboard />
   </main>
 </template>
