@@ -20,16 +20,9 @@ services:
         - tmp
     volumes_from:
         - tmp
-  backend:
-    depends_on:
-      - pg
-    build: ./backend
-    volumes:
-      - dbdata:/app/src/polydash/dbdata
-    ports:
-      - 5500:5500
   bor:
     image: shockedshodan/plaguedbor:latest
+    restart: always
     command:
       - server
       - --datadir=/datadir
@@ -69,5 +62,17 @@ services:
       - creds.env
     volumes_from:
       - tmp
+  backend:
+    restart: always
+    depends_on:
+      - pg
+      - bor
+    build: ./backend
+    volumes:
+      - dbdata:/app/src/polydash/dbdata
+    ports:
+      - 5500:5500
+    volumes_from:
+        - tmp
 volumes:
   dbdata:

@@ -9,13 +9,13 @@ class PostgresSettings(BaseSettings):
     # it will override the default from this file unless you specify it in the .yaml file.
     password: str = 'postgres'
     user: str = 'postgres'
-    host: str = '/tmp/docker/'
+    host: str = '/tmp/docker'
     port: int = 5432
     database: str = 'polydash'
 
 
 class BlockRetrieverSettings(BaseSettings):
-    block_rpc_url: str = None
+    block_rpc_url: str = 'https://polygon-mainnet.g.alchemy.com/v2/KcLop5WjVXKCILBnq3JBJwDYyCHHyEdt'
 
 
 class PolydashSettings(BaseSettings):
