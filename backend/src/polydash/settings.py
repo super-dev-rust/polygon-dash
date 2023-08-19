@@ -7,9 +7,9 @@ class PostgresSettings(BaseSettings):
     # So, the priority is : config > env > default.
     # As the 'user' var is typically set for the current user,
     # it will override the default from this file unless you specify it in the .yaml file.
-    password: str = None
+    password: str = 'postgres'
     user: str = 'postgres'
-    host: str = 'localhost'
+    host: str = '/tmp/docker/'
     port: int = 5432
     database: str = 'polydash'
 
