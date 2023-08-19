@@ -14,6 +14,14 @@ h1 {
   line-height: 2rem;
 }
 
+h2 {
+  color: $color-text-heading;
+  font-size: 1.375rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 2rem;
+}
+
 p {
   color: $color-text;
   font-size: 1.0625rem;
@@ -35,6 +43,14 @@ p {
     line-height: 3rem;
   }
 
+  h2 {
+    color: $color-text-heading;
+    font-size: 2rem;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 2.75rem;
+  }
+
   p {
     color: $color-text;
     font-size: 1.25rem;
@@ -46,7 +62,7 @@ p {
 
 @media screen and (min-width: $breakpoint-desktop) {
   #app {
-    max-width: calc($breakpoint-desktop + 2rem);
+    max-width: calc(1216px + 4rem);
     margin: 0 auto;
   }
 
@@ -56,5 +72,13 @@ p {
     font-style: normal;
     font-weight: 600;
     line-height: 4.5rem;
+  }
+
+  h2 {
+    color: $color-text-heading;
+    font-size: 2.25rem;
+    font-style: normal;
+    font-weight: 600;
+    line-height: 2.75rem;
   }
 }
