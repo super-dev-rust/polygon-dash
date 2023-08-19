@@ -1,10 +1,16 @@
+import enum
+
 from pony import orm
 from pydantic import BaseModel
 from polydash.db import db
 from typing import Optional
 
-RISK_TOO_FAST = 0
-RISK_TOO_SLOW = 1
+
+class RiskType(enum.Enum):
+    NO_RISK = 0
+    RISK_TOO_FAST = 1
+    RISK_TOO_SLOW = 2
+    RISK_INJECTION = 3
 
 
 class TransactionRisk(db.Entity):

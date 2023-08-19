@@ -6,9 +6,7 @@ from polydash.settings import PolydashSettings
 from polydash.routers import node, block, dashboard, deanon, transaction_risk
 from polydash.db import start_db
 from polydash.block_retriever.retriever import BlockRetriever
-from polydash.rating.live_time_heuristic import start_live_time_heuristic
-from polydash.rating.live_time_heuristic_a import start_live_time_heuristic_a
-from polydash.rating.live_time_transaction import start_live_time_transaction_heuristic
+from polydash.rating.live_rating import start_live_time_rating_calc
 from polydash.deanonymize.deanonymizer import start_deanonymizer
 import click
 
@@ -43,10 +41,10 @@ def start(settings) -> PolydashSettings:
 
     start_db(s.postgres_connection)
     BlockRetriever(s.block_retriever).start()
-    start_live_time_heuristic()
-    start_live_time_heuristic_a()
+    # start_live_time_heuristic()
+    # start_live_time_heuristic_a()
     start_deanonymizer()
-    start_live_time_transaction_heuristic()
+    start_live_time_rating_calc()
 
     uvicorn.run(app, host=s.host, port=s.port)
 

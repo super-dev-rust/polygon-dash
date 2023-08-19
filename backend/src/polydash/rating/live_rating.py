@@ -6,13 +6,14 @@ import traceback
 from pony import orm
 
 from polydash.log import LOGGER
+from polydash.model.node_risk import NodeStats, BlockDelta
+from polydash.model.risk import MinerRisk
 from polydash.model.transaction_p2p import TransactionP2P
 from polydash.model.node_risk import NodeRisk
 from polydash.model.block import Block
 from polydash.model.transaction_risk import (
     TransactionRisk,
-    RISK_TOO_FAST,
-    RISK_TOO_SLOW,
+    RiskType,
 )
 
 TransactionEventQueue = queue.Queue()
@@ -61,8 +62,8 @@ def calculate_mean_variance(new_value, old_mean, old_variance, old_number_of_val
     new_mean = (old_mean * old_number_of_values + new_value) / new_number_of_values
     if new_number_of_values > 1:
         new_variance = (
-            (old_variance + old_mean**2) * old_number_of_values + new_value**2
-        ) / new_number_of_values - new_mean**2
+                               (old_variance + old_mean ** 2) * old_number_of_values + new_value ** 2
+                       ) / new_number_of_values - new_mean ** 2
     else:
         new_variance = 0
 
@@ -70,17 +71,44 @@ def calculate_mean_variance(new_value, old_mean, old_variance, old_number_of_val
     return new_mean, new_variance, new_number_of_values, too_low, too_big
 
 
-def process_transaction(tx, node_pubkey):
+def record_injection(author_node: NodeStats, block_delta: BlockDelta):
+    with orm.db_session:
+        author_node.num_injections += 1
+        author_node.num_txs += 1
+
+        block_delta.num_txs += 1
+        block_delta.num_injections += 1
+
+
+def record_outlier(author_node: NodeStats, block_delta: BlockDelta):
+    # TODO: FIX
+    with orm.db_session:
+        author_node.num_outliers += 1
+        author_node.num_txs += 1
+
+        block_delta.num_txs += 1
+        block_delta.num_outliers += 1
+
+
+def process_transaction(tx, node_pubkey, block_delta: BlockDelta, author_node: NodeStats, ) -> RiskType:
     # find the transaction in the list of the ones seen by P2P
     with orm.db_session:
-        # Pony kept throwing exception at me with both generator and lambda select syntax, so raw SQL
         if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
-            return
+            # We haven't seen this transaction. Record an injection for the node
+            record_injection(author_node, block_delta)
+            return RiskType.RISK_INJECTION
 
     # get the live-time of this transaction
     live_time = tx.created - tx_p2p.tx_first_seen
-    if live_time <= 0:
-        return
+
+    # The transaction was seen too late. Record an injection for the node
+    if live_time < -10000:
+        record_injection(author_node, block_delta)
+        return RiskType.RISK_INJECTION
+    # Record as outlier
+    if live_time < 0:
+        record_outlier(author_node, block_delta)
+        return RiskType.RISK_TOO_FAST
 
     # calculate the values
     global GLOBAL_MEAN
@@ -96,29 +124,28 @@ def process_transaction(tx, node_pubkey):
     GLOBAL_COUNTED_TXS = counted_txs
     risk = None
     if too_low:
-        risk = RISK_TOO_SLOW
+        risk = RiskType.RISK_TOO_SLOW
     elif too_big:
-        risk = RISK_TOO_FAST
+        risk = RiskType.RISK_TOO_FAST
+    else:
+        risk = RiskType.NO_RISK
 
     # save the values into DB
     with orm.db_session:
         # of our new transaction risk
-        TransactionRisk(
+        tx_risk = TransactionRisk(
             hash=tx.hash,
-            risk=risk,
+            risk=risk.value,
             live_time=live_time,
             global_mean=mean,
             global_variance=variance,
             global_counted_txs=counted_txs,
         )
 
-        # and also of the node, which is responsible for that transaction
-        if too_low or too_big:
-            author_node = NodeRisk.get_or_insert(pubkey=node_pubkey)
-            if too_low:
-                author_node.too_fast_txs += 1
-            else:
-                author_node.too_slow_txs += 1
+        if too_low:
+            record_outlier(author_node, block_delta)
+        return risk
+
 
 
 def main_loop():
@@ -128,12 +155,47 @@ def main_loop():
         try:
             # get the block from some other thread
             block_number = TransactionEventQueue.get()
+
             with orm.db_session:
                 block = Block.get(number=block_number)
 
-                # update our internal mean-variance state and find outliers
-                for tx in block.transactions:
-                    process_transaction(tx, block.validated_by)
+                block_delta = BlockDelta(
+                    block_number=block.number,
+                    hash=block.hash,
+                    pubkey=block.validated_by,
+                    num_txs=0,
+                    num_injections=0,
+                    num_violations=0,
+                    block_time=block.timestamp
+                )
+
+                author_node = NodeStats.get(pubkey=block.validated_by)
+                if author_node is None:
+                    author_node = NodeStats(
+                        pubkey=block.validated_by,
+                        num_outliers=0,
+                        num_injections=0,
+                        num_txs=0,
+                    )
+            num_txs = 0
+            num_injects = 0
+            num_outliers = 0
+            for tx in block.transactions:
+                risk = process_transaction(tx, block.validated_by, block_delta, author_node)
+            num_txs += 1
+            if risk.RISK_INJECTION:
+                num_injects += 1
+            elif risk.RISK_TOO_FAST:
+                num_injects += 1
+
+            with orm.db_session:
+                # Get max number of transactions from NodeStats
+                max_txs = max(ns.num_txs for ns in NodeStats)
+                c = author_node.num_txs / max_txs
+                d = 1 / (1 + math.exp(-12 * (c - 0.4)))
+                MinerRisk.add_datapoint_new(block.validated_by,
+                                            d, num_injects, num_outliers,
+                                            num_txs, block.number)
         except Exception as e:
             traceback.print_exc()
             LOGGER.error(
@@ -143,6 +205,6 @@ def main_loop():
             )
 
 
-def start_live_time_transaction_heuristic():
+def start_live_time_rating_calc():
     LOGGER.info("Starting LiveTimeTransaction thread...")
     threading.Thread(target=main_loop, daemon=True).start()

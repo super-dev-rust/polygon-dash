@@ -1,6 +1,6 @@
 import pytest
 
-from polydash.rating.live_time_transaction import calculate_mean_variance
+from polydash.rating.live_rating import calculate_mean_variance
 
 
 @pytest.fixture
