@@ -9,6 +9,7 @@ import IconPhantom from '@/assets/icons/wallets/icon-phantom.svg';
 import IconCoinbase from '@/assets/icons/wallets/icon-coinbase.svg';
 import IconTrustWallet from '@/assets/icons/wallets/icon-trust.svg';
 import IconSafe from '@/assets/icons/wallets/icon-safe.svg';
+import AppHeadingText from '@/components/shared/AppHeadingText.vue';
 
 const SOCIALS = [
   {
@@ -66,7 +67,7 @@ const WALLETS = [
 
 <template>
   <section class="home-content-steps">
-    <p class="home-content-steps__heading-text">Experience Unparalleled Trust</p>
+    <AppHeadingText>Experience Unparalleled Trust</AppHeadingText>
     <div class="home-content-steps__wrapper">
       <div>
         <h2 class="home-content-steps__step-header">Step 1: Contact Us</h2>
