@@ -1,25 +1,14 @@
 version: '3.8'
 services:
-  tmp:
-      image: busybox
-      command: sh -c "chown -R 33:33 /tmp/docker/ && chmod -R 770 /tmp/docker/"
-      volumes:
-        - /tmp/docker/
   pg:
     image: postgres:latest
     restart: always
-    user: "999:33"
     ports:
       - 1234:5432
     volumes:
         - ./pg_data:/var/lib/postgresql/data
-    command: postgres -c unix_socket_directories='/var/run/postgresql/,/tmp/docker/'
     env_file:
       - creds.env
-    depends_on:
-        - tmp
-    volumes_from:
-        - tmp
   bor:
     image: shockedshodan/plaguedbor:latest
     restart: always
@@ -60,8 +49,6 @@ services:
       - pg
     env_file:
       - creds.env
-    volumes_from:
-      - tmp
   backend:
     restart: always
     depends_on:
@@ -72,7 +59,5 @@ services:
       - dbdata:/app/src/polydash/dbdata
     ports:
       - 5500:5500
-    volumes_from:
-        - tmp
 volumes:
   dbdata:

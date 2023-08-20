@@ -9,7 +9,7 @@ class PostgresSettings(BaseSettings):
     # it will override the default from this file unless you specify it in the .yaml file.
     password: str = None
     user: str = 'postgres'
-    host: str = '/tmp/docker'
+    host: str = 'localhost'
     port: int = 5432
     database: str = 'polydash'
 
