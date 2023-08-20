@@ -119,8 +119,7 @@ class BlockRetriever:
 
                 # second, retrieve the block's author (validator)
                 author_failure_count = 0
-                fetched_block_author = self.get_block_author(block_number)
-                while fetched_block_author is None:
+                while (fetched_block_author := self.get_block_author(block_number)) is None:
                     if author_failure_count > 5:
                         raise "could not retrieve the author of the block"
                     self.__logger.info(
@@ -130,10 +129,11 @@ class BlockRetriever:
                     )
                     time.sleep(0.5)
                     author_failure_count += 1
-                    fetched_block_author = self.get_block_author(block_number)
 
                 # finally, save it in DB
                 with orm.db_session:
+                    if Block.exists(number=block_number):
+                        continue
                     block = Block(
                         number=block_number,
                         hash=block_hash,
