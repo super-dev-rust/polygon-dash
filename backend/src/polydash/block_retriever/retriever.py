@@ -132,23 +132,22 @@ class BlockRetriever:
 
                 # finally, save it in DB
                 with orm.db_session:
-                    if Block.exists(number=block_number):
-                        continue
-                    block = Block(
-                        number=block_number,
-                        hash=block_hash,
-                        validated_by=fetched_block_author,
-                    )
-                    for tx in block_txs:
-                        block.transactions.add(
-                            Transaction(
-                                hash=tx[0],
-                                creator=tx[1],
-                                created=block_ts,
-                                block=block_number,
-                            )
+                    if block := Block.get(number=block_number) is None:
+                        block = Block(
+                            number=block_number,
+                            hash=block_hash,
+                            validated_by=fetched_block_author,
                         )
-                    orm.commit()
+                        for tx in block_txs:
+                            block.transactions.add(
+                                Transaction(
+                                    hash=tx[0],
+                                    creator=tx[1],
+                                    created=block_ts,
+                                    block=block_number,
+                                )
+                            )
+                        orm.commit()
                     EventQueue.put(block)  # put the block for the heuristics to be updated
                     BlockPoolHeuristicQueue.put(
                         (
