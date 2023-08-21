@@ -20,7 +20,7 @@ def calculate_confidence_by_block(block):
     Increase the confidence of the relation between the peer, from which
     we first saw this block, and the creator of this block
     """
-    if block_from_p2p := BlockP2P.get_first_by_hash(block.hash) is None:
+    if (block_from_p2p := BlockP2P.get_first_by_hash(block.hash)) is None:
         # we haven't seen this block over P2P, nothing can be done
         return
 
@@ -41,7 +41,7 @@ def calculate_confidence_by_tx(block):
     we first saw transactions from this block, and the creator of this block
     """
     for tx in block.transactions:
-        if tx_p2p := TransactionP2P.get_first_by_hash(tx.hash) is None:
+        if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
             # we haven't seen it
             return
 

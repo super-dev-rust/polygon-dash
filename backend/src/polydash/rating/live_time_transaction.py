@@ -1,6 +1,7 @@
 import queue
 import threading
 import math
+import traceback
 
 from pony import orm
 
@@ -33,13 +34,11 @@ def try_initialize_globals():
 
     # initialize the values of GLOBAL_MEAN & GLOBAL_VARIANCE with the last values from DB (if they exist)
     with orm.db_session:
-        last_tx_risk = TransactionRisk.select_by_sql(
-            "SELECT * from TransactionRisk ORDER BY id DESC LIMIT 1"
-        )
-    if last_tx_risk is not None and len(last_tx_risk) != 0:
-        GLOBAL_MEAN = last_tx_risk[0].global_mean
-        GLOBAL_VARIANCE = last_tx_risk[0].global_variance
-        GLOBAL_COUNTED_TXS = last_tx_risk[0].global_counted_txs
+        last_tx_risk = TransactionRisk.select().order_by(TransactionRisk.id).first()
+    if last_tx_risk is not None:
+        GLOBAL_MEAN = last_tx_risk.global_mean
+        GLOBAL_VARIANCE = last_tx_risk.global_variance
+        GLOBAL_COUNTED_TXS = last_tx_risk.global_counted_txs
 
 
 def calculate_mean_variance(new_value, old_mean, old_variance, old_number_of_values):
@@ -74,13 +73,7 @@ def process_transaction(tx, node_pubkey):
     # find the transaction in the list of the ones seen by P2P
     with orm.db_session:
         # Pony kept throwing exception at me with both generator and lambda select syntax, so raw SQL
-        tx_p2p = TransactionP2P.get_by_sql(
-            'SELECT * FROM tx_summary WHERE tx_hash="{}" ORDER BY tx_first_seen LIMIT 1'.format(
-                tx.hash
-            )
-        )
-        if tx_p2p is None:
-            # we haven't seen it
+        if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
             return
 
     # get the live-time of this transaction
@@ -109,7 +102,7 @@ def process_transaction(tx, node_pubkey):
     # save the values into DB
     with orm.db_session:
         # of our new transaction risk
-        tx_risk = TransactionRisk(
+        TransactionRisk(
             hash=tx.hash,
             risk=risk,
             live_time=live_time,
@@ -120,11 +113,7 @@ def process_transaction(tx, node_pubkey):
 
         # and also of the node, which is responsible for that transaction
         if too_low or too_big:
-            author_node = NodeRisk.get(pubkey=node_pubkey)
-            if author_node is None:
-                author_node = NodeRisk(
-                    pubkey=node_pubkey, too_fast_txs=0, too_slow_txs=0
-                )
+            author_node = NodeRisk.get_or_insert(pubkey=node_pubkey)
             if too_low:
                 author_node.too_fast_txs += 1
             else:
@@ -143,6 +132,7 @@ def main_loop():
             for tx in block.transactions:
                 process_transaction(tx, block.validated_by)
         except Exception as e:
+            traceback.print_exc()
             LOGGER.error(
                 "exception when calculating the live-time transaction mean&variance happened: {}".format(
                     str(e)

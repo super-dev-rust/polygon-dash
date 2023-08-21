@@ -2,11 +2,13 @@ from pony import orm
 from pydantic import BaseModel
 from polydash.db import db
 
+from src.polydash.model import GetOrInsertMixin
 
-class NodeRisk(db.Entity):
+
+class NodeRisk(db.Entity, GetOrInsertMixin):
     pubkey = orm.PrimaryKey(str)
-    too_fast_txs = orm.Required(int)
-    too_slow_txs = orm.Required(int)
+    too_fast_txs = orm.Optional(int, default=0)
+    too_slow_txs = orm.Optional(int, default=0)
 
 
 class NodeRiskInDB(BaseModel):

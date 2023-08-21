@@ -51,7 +51,7 @@ def process_transaction(author_node, tx):
     # find the transaction in the list of the ones seen by P2P
     with orm.db_session:
         # Pony kept throwing exception at me with both generator and lambda select syntax, so raw SQL
-        if tx_p2p := TransactionP2P.get_first_by_hash(tx.hash) is None:
+        if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
             # we haven't seen it
             return
 
