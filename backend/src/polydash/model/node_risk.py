@@ -7,7 +7,7 @@ from src.polydash.model import GetOrInsertMixin
 
 class NodeRisk(db.Entity, GetOrInsertMixin):
     pubkey = orm.PrimaryKey(str)
-    too_fast_txs = orm.Optinal(int, default=0)
+    too_fast_txs = orm.Optional(int, default=0)
     too_slow_txs = orm.Optional(int, default=0)
 
 
