@@ -148,7 +148,8 @@ class BlockRetriever:
                                 )
                             )
                         orm.commit()
-                    EventQueue.put(block)  # put the block for the heuristics to be updated
+                    
+                    EventQueue.put(block_number)  # put the block for the heuristics to be updated
                     BlockPoolHeuristicQueue.put(
                         (
                             block_number,
@@ -160,10 +161,10 @@ class BlockRetriever:
                         )
                     )  # put the block data to the Heuristic A Queue
                     DeanonymizerQueue.put(
-                        block
+                        block_number
                     )  # put the block for the deanon process to work
                     TransactionEventQueue.put(
-                        block
+                        block_number
                     )  # put the block for the Transaction Risks to work
                 self.__logger.debug(
                     "retrieved and saved into DB block with number {} and hash {}".format(

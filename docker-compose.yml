@@ -46,14 +46,13 @@ services:
       - 30303:30303
       - 30303:30303/udp
     depends_on:
-      - pg
+      - backend
     env_file:
       - creds.env
   backend:
     restart: always
     depends_on:
       - pg
-      - bor
     build: ./backend
     volumes:
       - dbdata:/app/src/polydash/dbdata

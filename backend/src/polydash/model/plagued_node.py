@@ -49,11 +49,11 @@ class PlaguedBlock(db.Entity):
 class TransactionFetched(db.Entity):
     _table_ = "tx_fetched"
     id = orm.PrimaryKey(int, auto=True)
-    tx_hash = orm.Optional(str)
+    tx_hash = orm.Optional(str, unique=True)
     tx_fee = orm.Optional(str)
     gas_fee_cap = orm.Optional(str)
     gas_tip_cap = orm.Optional(str)
-    tx_first_seen = orm.Optional(int)
+    tx_first_seen = orm.Optional(int, size=64)
     receiver = orm.Optional(str)
     signer = orm.Optional(str)
     nonce = orm.Optional(str)

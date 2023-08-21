@@ -87,3 +87,12 @@ npm run build
 ```sh
 npm run lint
 ```
+
+
+
+## Run app in a docker
+
+Run up and rebuild backed
+```bash
+docker compose up --build
+```

@@ -10,6 +10,7 @@ from polydash.model.transaction_p2p import TransactionP2P
 from polydash.model.deanon_node_by_tx import DeanonNodeByTx
 from polydash.model.deanon_node_by_block import DeanonNodeByBlock
 from polydash.model.peer_to_ip import PeerToIP
+from polydash.model.block import Block
 
 DeanonymizerQueue = queue.Queue()
 
@@ -43,7 +44,7 @@ def calculate_confidence_by_tx(block):
     for tx in block.transactions:
         if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
             # we haven't seen it
-            return
+            continue
 
         # if there is no such node is remembered by us yet, create it
         # and just increase the confidence of this mapping
@@ -55,11 +56,11 @@ def main_loop():
     while True:
         try:
             # get the block from some other thread
-            block = DeanonymizerQueue.get()
-
-            calculate_confidence_by_block(block)
-            calculate_confidence_by_tx(block)
-
+            block_number = DeanonymizerQueue.get()
+            with orm.db_session:
+                block = Block.get(number=block_number)
+                calculate_confidence_by_block(block)
+                calculate_confidence_by_tx(block)
         except Exception as e:
             traceback.print_exc()
             LOGGER.error(

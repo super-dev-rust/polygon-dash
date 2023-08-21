@@ -8,6 +8,7 @@ from pony import orm
 from polydash.log import LOGGER
 from polydash.model.transaction_p2p import TransactionP2P
 from polydash.model.node_risk import NodeRisk
+from polydash.model.block import Block
 from polydash.model.transaction_risk import (
     TransactionRisk,
     RISK_TOO_FAST,
@@ -126,11 +127,13 @@ def main_loop():
     while True:
         try:
             # get the block from some other thread
-            block = TransactionEventQueue.get()
+            block_number = TransactionEventQueue.get()
+            with orm.db_session:
+                block = Block.get(number=block_number)
 
-            # update our internal mean-variance state and find outliers
-            for tx in block.transactions:
-                process_transaction(tx, block.validated_by)
+                # update our internal mean-variance state and find outliers
+                for tx in block.transactions:
+                    process_transaction(tx, block.validated_by)
         except Exception as e:
             traceback.print_exc()
             LOGGER.error(
