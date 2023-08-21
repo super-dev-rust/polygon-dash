@@ -132,7 +132,7 @@ class BlockRetriever:
 
                 # finally, save it in DB
                 with orm.db_session:
-                    if block := Block.get(number=block_number) is None:
+                    if (block := Block.get(number=block_number)) is None:
                         block = Block(
                             number=block_number,
                             hash=block_hash,
