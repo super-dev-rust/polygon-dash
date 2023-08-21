@@ -7,8 +7,8 @@ class BlockP2P(db.Entity):
     _table_ = "block_fetched"
     id = orm.PrimaryKey(int, auto=True)
     block_hash = orm.Required(str, index=True)
-    block_number = orm.Optional(int)
-    first_seen_ts = orm.Optional(int)
+    block_number = orm.Optional(int, size=64)
+    first_seen_ts = orm.Optional(int, size=64)
     peer = orm.Optional(str)
     peer_remote_addr = orm.Optional(str)
     peer_local_addr = orm.Optional(str)

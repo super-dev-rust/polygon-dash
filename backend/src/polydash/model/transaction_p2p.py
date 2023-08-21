@@ -10,7 +10,7 @@ class TransactionP2P(db.Entity, GetOrInsertMixin):
     tx_hash = orm.Required(str, index=True)
     peer_id = orm.Required(str)
     PrimaryKey(tx_hash, peer_id)
-    tx_first_seen = orm.Optional(int)
+    tx_first_seen = orm.Optional(int, size=64)
 
     @classmethod
     def get_first_by_hash(cls, tx_hash):
