@@ -66,12 +66,12 @@ def process_block(block_number, block_hash, base_fee, block_timestamp, transacti
 @orm.db_session
 def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
     pending_txs = {}
-    lower_bound = block_timestamp - 300000
-    upper_bound = block_timestamp
+    lower_bound = (block_timestamp * 1000) - 300000
+    upper_bound = block_timestamp * 1000
     query = TransactionFetched.select_by_sql(
         "SELECT * FROM tx_fetched WHERE tx_first_seen > $lower_bound AND tx_first_seen < $upper_bound")
     LOGGER.debug("Querying pending transactions")
-
+    LOGGER.debug("block_ts: {}".format(block_timestamp))
     transactions = list(query)
     LOGGER.debug("transactions length: {}".format(len(transactions)))
     if len(transactions) == 0:
