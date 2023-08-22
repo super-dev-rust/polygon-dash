@@ -71,7 +71,7 @@ def pending_transactions_by_price_and_nonce(block_timestamp, base_fee):
     query = TransactionFetched.select_by_sql(
         "SELECT * FROM tx_fetched WHERE tx_first_seen > $lower_bound AND tx_first_seen < $upper_bound")
     LOGGER.debug("Querying pending transactions")
-
+    LOGGER.debug("block_ts: {}".format(block_timestamp))
     transactions = list(query)
     LOGGER.debug("transactions length: {}".format(len(transactions)))
     if len(transactions) == 0:
