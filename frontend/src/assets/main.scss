@@ -2,7 +2,7 @@
 @import './breakpoints.scss';
 @import './colors.scss';
 
-#app {
+main {
   padding: 0 0.6rem;
 }
 
@@ -31,7 +31,7 @@ p {
 }
 
 @media screen and (min-width: $breakpoint-tablet) {
-  #app {
+  main {
     padding: 0 2rem;
   }
 
@@ -61,7 +61,7 @@ p {
 }
 
 @media screen and (min-width: $breakpoint-desktop) {
-  #app {
+  main {
     max-width: calc(1216px + 4rem);
     margin: 0 auto;
   }

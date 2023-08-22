@@ -30,6 +30,8 @@ import AppTabsBlockchains from '@/components/shared/AppTabsBlockchains.vue';
 
 .guardian-header {
   padding-top: 2rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 
   .guardian-header__central-navigation {
     display: flex;

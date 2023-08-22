@@ -4,7 +4,7 @@ import IconMail from '@/assets/icons/contacts/icon-mail.svg';
 import IconTwitter from '@/assets/icons/contacts/icon-twitter.svg';
 
 import IconMetamask from '@/assets/icons/wallets/icon-metamask.svg';
-import IconRainbow from '@/assets/icons/wallets/icon-rainbow.svg';
+import IconRainbow from '@/assets/icons/wallets/icon-rainbow-2.svg?skipsvgo';
 import IconPhantom from '@/assets/icons/wallets/icon-phantom.svg';
 import IconCoinbase from '@/assets/icons/wallets/icon-coinbase.svg';
 import IconTrustWallet from '@/assets/icons/wallets/icon-trust.svg';
