@@ -90,7 +90,7 @@ class BlockRetriever:
     def retriever_thread(self):
         self.__logger.info("block retrieved thread has started")
         # set to None to begin from the latest block; set to some block ID to begin with it
-        next_block_number = 44563210
+        next_block_number = 46610325
         # next_block_number = 0
         failure_count = 0
         while True:
