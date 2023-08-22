@@ -2,7 +2,7 @@ from pony import orm
 from pydantic import BaseModel
 from polydash.db import db
 
-from src.polydash.model import GetOrInsertMixin
+from polydash.model import GetOrInsertMixin
 
 
 class NodeRisk(db.Entity, GetOrInsertMixin):

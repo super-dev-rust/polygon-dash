@@ -8,7 +8,7 @@ class DeanonNodeByTx(db.Entity, GetOrInsertMixin):
     id = orm.PrimaryKey(int, auto=True)
     signer_key = orm.Required(str)
     peer_id = orm.Required(str)
-    confidence = orm.Required(int)
+    confidence = orm.Required(int, default=0)
 
 
 class DeanonNodeByTxInDB(BaseModel):
