@@ -137,12 +137,13 @@ class BlockRetriever:
                     block_ts = block_from_p2p.first_seen_ts
 
                 with orm.db_session:
-                    if (block := Block.get(number=block_number)) is None:block = Block(
-                        number=block_number,
-                        hash=block_hash,
-                        validated_by=fetched_block_author,
-                        timestamp=block_ts,
-                    )
+                    if (block := Block.get(number=block_number)) is None:
+                        block = Block(
+                            number=block_number,
+                            hash=block_hash,
+                            validated_by=fetched_block_author,
+                            timestamp=block_ts,
+                        )
                     for tx in block_txs:
                         block.transactions.add(
                             Transaction(

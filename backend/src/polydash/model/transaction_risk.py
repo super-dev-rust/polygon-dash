@@ -18,9 +18,6 @@ class TransactionRisk(db.Entity):
     hash = orm.Required(str)
     risk = orm.Optional(int)
     live_time = orm.Required(int)
-    global_mean = orm.Required(float)
-    global_variance = orm.Required(float)
-    global_counted_txs = orm.Required(int)
 
 
 class TransactionRiskOut(BaseModel):
@@ -28,9 +25,6 @@ class TransactionRiskOut(BaseModel):
     hash: str
     risk: Optional[int]
     live_time: int
-    global_mean: float
-    global_variance: float
-    global_counted_txs: int
 
     class Config:
         orm_mode = True
