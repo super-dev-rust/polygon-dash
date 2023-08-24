@@ -40,6 +40,7 @@ const toggle = () => {
   display: flex;
   gap: 1.5rem;
   justify-content: space-between;
+  margin-bottom: 1rem;
 
   .home-content-faq-block__text-section {
     display: flex;
@@ -67,4 +68,18 @@ const toggle = () => {
     cursor: pointer;
   }
 }
+
+
+// @media screen and (min-width: $breakpoint-desktop) {
+//   .home-content-faq-block {
+//     padding: 2rem;
+//     border-radius: 1rem;
+//     background: $gray-50;
+//     display: flex;
+//     gap: 1.5rem;
+//     justify-content: space-between;
+//     flex-direction: row;
+//     margin-top: 4rem;
+//   }
+// }
 </style>
