@@ -8,12 +8,13 @@ from pony import orm
 
 from polydash.log import LOGGER
 from polydash.model.block import Block
+from polydash.model.block_p2p import BlockP2P
 from polydash.model.transaction import Transaction
 from polydash.rating.live_time_heuristic import EventQueue
 from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 from polydash.deanonymize.deanonymizer import DeanonymizerQueue
 from polydash.settings import BlockRetrieverSettings
-from polydash.rating.live_time_transaction import TransactionEventQueue
+from polydash.rating.live_rating import TransactionEventQueue
 
 alchemy_token = ""
 
@@ -131,25 +132,28 @@ class BlockRetriever:
                     time.sleep(0.5)
                     author_failure_count += 1
 
-                # finally, save it in DB
+                # If we have the block in the p2p table, use that timestamp instead
+                if block_from_p2p := BlockP2P.get_first_by_hash(block_hash) is not None:
+                    block_ts = block_from_p2p.first_seen_ts
+
                 with orm.db_session:
                     if (block := Block.get(number=block_number)) is None:
                         block = Block(
                             number=block_number,
                             hash=block_hash,
                             validated_by=fetched_block_author,
+                            timestamp=block_ts,
                         )
-                        for tx in block_txs:
-                            block.transactions.add(
-                                Transaction(
-                                    hash=tx[0],
-                                    creator=tx[1],
-                                    created=block_ts,
-                                    block=block_number,
-                                )
+                    for tx in block_txs:
+                        block.transactions.add(
+                            Transaction(
+                                hash=tx[0],
+                                creator=tx[1],
+                                created=block_ts,
+                                block=block_number,
                             )
-                        orm.commit()
-                    
+                        )
+                    orm.commit()
                     EventQueue.put(block_number)  # put the block for the heuristics to be updated
                     BlockPoolHeuristicQueue.put(
                         (

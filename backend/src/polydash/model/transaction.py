@@ -4,6 +4,7 @@ from polydash.db import db
 
 
 class Transaction(db.Entity):
+    _table_ = "transaction"
     hash = orm.PrimaryKey(str)
     creator = orm.Required(str)
     created = orm.Required(int)

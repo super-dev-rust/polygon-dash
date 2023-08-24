@@ -5,16 +5,28 @@ from polydash.db import db
 from polydash.model import GetOrInsertMixin
 
 
-class NodeRisk(db.Entity, GetOrInsertMixin):
+class NodeStats(db.Entity, GetOrInsertMixin):
     pubkey = orm.PrimaryKey(str)
-    too_fast_txs = orm.Optional(int, default=0)
-    too_slow_txs = orm.Optional(int, default=0)
+    num_outliers = orm.Required(int, default=0)
+    num_injections = orm.Optional(int, default=0)
+    num_txs = orm.Optional(int, default=0)
 
 
-class NodeRiskInDB(BaseModel):
+class NodeStatInDB(BaseModel):
     pubkey: str
     too_fast_txs: int
     too_slow_txs: int
 
     class Config:
         orm_mode = True
+
+
+class BlockDelta(db.Entity):
+    block_number = orm.PrimaryKey(int)
+    hash = orm.Required(str, unique=True)
+    pubkey = orm.Required(str)
+    num_txs = orm.Required(int)
+    num_injections = orm.Required(int)
+    num_outliers = orm.Required(int)
+    block_time = orm.Required(int)
+
