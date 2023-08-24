@@ -117,7 +117,7 @@ async def get_miners_info(
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
 
         for pubkey, block_number in last_blocks.items():
-            block_delta = BlockDelta.get(number=block_number)
+            block_delta = BlockDelta.get(block_number=block_number)
             if (
                     block_delta is None
                     or block_delta.num_injections == 0
@@ -183,7 +183,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         blocks_data = []
         datasets = []
         for block in list(blocks_history):
-            plagued_block = BlockDelta.get(number=block.block_number)
+            plagued_block = BlockDelta.get(block_number=block.block_number)
             if plagued_block is not None:
                 # TODO:there should be a function that parse violations string
                 violations = [
