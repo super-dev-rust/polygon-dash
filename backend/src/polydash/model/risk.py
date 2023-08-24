@@ -30,3 +30,16 @@ class MinerRisk(db.Entity):
         # Add historical record
         MinerRiskHistory(pubkey=pubkey, block_number=block_number, risk=datapoint.risk, numblocks=datapoint.numblocks)
         return datapoint
+
+    @classmethod
+    @db_session
+    def add_datapoint_new(cls, pubkey, d_coef, num_injects, num_outliers, num_txs, block_number):
+        datapoint = cls.get(pubkey=pubkey) or cls(pubkey=pubkey)
+        datapoint.risk = d_coef * (0.8 * (1 - num_injects / num_txs)
+                                   + 0.2 * (1 - num_outliers / num_txs))
+        datapoint.numblocks += 1
+        datapoint.block_number = block_number
+        # Add historical record
+        MinerRiskHistory(pubkey=pubkey, block_number=block_number,
+                         risk=datapoint.risk, numblocks=datapoint.numblocks)
+        return datapoint

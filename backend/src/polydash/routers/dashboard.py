@@ -6,6 +6,7 @@ from pony.orm import db_session, desc
 from pydantic import BaseModel
 
 from polydash.log import LOGGER
+from polydash.model.node_risk import BlockDelta
 from polydash.model.risk import MinerRisk, MinerRiskHistory
 from polydash.model.plagued_node import PlaguedBlock
 
@@ -46,8 +47,8 @@ class MinerDisplayData(BaseModel):
 
 class BlockViolationsData(BaseModel):
     type: str
-    color: str # #D22B2B for injection, #D2B22B for censoring, #2BD22B for reordering
-    amount: int # 1 for now
+    color: str  # #D22B2B for injection, #D2B22B for censoring, #2BD22B for reordering
+    amount: int  # 1 for now
 
 
 class MinerBlocksData(BaseModel):
@@ -57,15 +58,15 @@ class MinerBlocksData(BaseModel):
     violations: List[BlockViolationsData]
 
 
-   # {label: [ListOfBlockNumbers], datasets: [{
-            #     label: "RiskScore",
-            #     backgroundColor: "#BEBEBE",
-            #     borderColor: "#BEBEBE",
-            #     stack: "combined",
-            #     fill: false,
-            #     order: 0,
-            #     data: [ListOfRiskScores]
-            #},{
+# {label: [ListOfBlockNumbers], datasets: [{
+#     label: "RiskScore",
+#     backgroundColor: "#BEBEBE",
+#     borderColor: "#BEBEBE",
+#     stack: "combined",
+#     fill: false,
+#     order: 0,
+#     data: [ListOfRiskScores]
+# },{
 
 class MinerChartDataset(BaseModel):
     fill: bool
@@ -78,11 +79,13 @@ class MinerChartDataset(BaseModel):
     data: List[int]
     tension: str
 
+
 class MinerChartData(BaseModel):
     labels: List[str]
     datasets: List[MinerChartDataset]
     blocks_data: List[MinerBlocksData]
     total: int
+
 
 class DashboardData(BaseModel):
     data: List[MinerDisplayData]
@@ -100,10 +103,10 @@ SORT_COLUMNS_MAP = {
 
 @router.get("/miners")
 async def get_miners_info(
-    page: int = 0,
-    pagesize: int = 20,
-    order_by: SortBy = Query(None, title="Sort By"),
-    sort_order: SortOrder = Query(None, title="Sort Order"),
+        page: int = 0,
+        pagesize: int = 20,
+        order_by: SortBy = Query(None, title="Sort By"),
+        sort_order: SortOrder = Query(None, title="Sort Order"),
 ) -> DashboardData:
     with db_session():
         # TODO: this one is horribly inefficient,
@@ -112,20 +115,20 @@ async def get_miners_info(
         ranks = {m.pubkey: rank for rank, m in enumerate(miners_by_risk)}
         last_blocks = {m.pubkey: m.block_number for m in miners_by_risk}
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
+
         for pubkey, block_number in last_blocks.items():
-            plagued_block = PlaguedBlock.get(number=block_number)
+            block_delta = BlockDelta.get(number=block_number)
             if (
-                plagued_block == None
-                or plagued_block.violations == ""
-                or plagued_block.last_violation == None
+                    block_delta is None
+                    or block_delta.num_injections == 0
             ):
                 continue
             violations_by_miner[pubkey].append(
                 ViolationDisplayData(
-                    type=plagued_block.violations,
+                    type="injection",
                     color="#D22B2B",
-                    last_violation=plagued_block.last_violation,
-                    violation_severity=1,
+                    last_violation=block_delta.block_time,
+                    violation_severity=block_delta.num_injections,
                 )
             )
 
@@ -163,15 +166,16 @@ async def get_miners_info(
 @router.get("/miners/{address}")
 async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData:
     with db_session():
-        
+
         miner = MinerRisk.get(pubkey=address)
         if not miner:
             raise HTTPException(status_code=404, detail="Miner not found")
 
-        blocks_history = MinerRiskHistory.select_by_sql("SELECT * FROM MinerRiskHistory WHERE pubkey = $address ORDER BY block_number DESC LIMIT $last_blocks")        
+        blocks_history = MinerRiskHistory.select_by_sql(
+            "SELECT * FROM MinerRiskHistory WHERE pubkey = $address ORDER BY block_number DESC LIMIT $last_blocks")
         if not blocks_history:
             return MinerChartData(labels=[], datasets=[], blocks_data=[])
-        
+
         LOGGER.debug("Blocks history: %s", blocks_history)
         labels = []
         risk_data = []
@@ -179,19 +183,14 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         blocks_data = []
         datasets = []
         for block in list(blocks_history):
-            plagued_block = PlaguedBlock.get(number=block.block_number)
+            plagued_block = BlockDelta.get(number=block.block_number)
             if plagued_block is not None:
-                #TODO:there should be a function that parse violations string
-                # and return a list of violations prepared for MinerDetailedBlocksData
-                # for now only one violation is supported
-                LOGGER.debug("Plagued block violations bool: %s", int(plagued_block.violations != ""))
-                LOGGER.debug("Plagued block violations len: %s", len(plagued_block.violations))
-                LOGGER.debug("Plagued block violations: %s", plagued_block.violations)
+                # TODO:there should be a function that parse violations string
                 violations = [
                     BlockViolationsData(
-                        type=plagued_block.violations,
+                        type="injection",
                         color="#D22B2B",
-                        amount=int(plagued_block.violations != "") * 100
+                        amount=plagued_block.num_injections
                     )
                 ]
                 # Populate blocks data for now, maybe it will be used later
@@ -211,10 +210,9 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 )
                 # Populate violations_data for chart
                 violations_data.append(
-                    int(plagued_block.violations != "") * 100
-                    )
-       
-       
+                    plagued_block.num_injections
+                )
+
         datasets.append(
             MinerChartDataset(
                 fill=False,
@@ -228,9 +226,9 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 tension=""
             )
         )
-        
+
         datasets.append(
-             MinerChartDataset(
+            MinerChartDataset(
                 fill=False,
                 order=1,
                 type="",
@@ -243,7 +241,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             )
         )
         datasets.append(
-             MinerChartDataset(
+            MinerChartDataset(
                 fill=False,
                 order=2,
                 type="line",

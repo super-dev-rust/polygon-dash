@@ -1,13 +1,16 @@
 import queue
 import threading
 import math
+import traceback
 
 from pony import orm
+from pony.orm import select
 
 from polydash.log import LOGGER
 from polydash.model.node import Node
 from polydash.model.risk import MinerRisk
 from polydash.model.transaction_p2p import TransactionP2P
+from polydash.model.block import Block
 
 TRANSACTION_WINDOW_SIZE = 700  # ~10 blocks
 
@@ -45,13 +48,11 @@ def calculate_mean_variance(node_pubkey, tx_live_time):
     node.n_txs += 1
 
 
-def process_transaction(author_node, tx):
+def process_transaction(author_node_pubkey, tx):
     # find the transaction in the list of the ones seen by P2P
     with orm.db_session:
         # Pony kept throwing exception at me with both generator and lambda select syntax, so raw SQL
-        tx_p2p = TransactionP2P.get_by_sql(
-            'SELECT * FROM tx_summary WHERE tx_hash="{}" ORDER BY tx_first_seen LIMIT 1'.format(tx.hash))
-        if tx_p2p is None:
+        if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
             # we haven't seen it
             return
 
@@ -61,29 +62,32 @@ def process_transaction(author_node, tx):
         return
 
     # calculate it
-    calculate_mean_variance(author_node.pubkey, live_time)
+    calculate_mean_variance(author_node_pubkey, live_time)
 
 
 def main_loop():
     while True:
         try:
-            # get the block from some other thread
-            block = EventQueue.get()
+            # get the block_number from some other thread
+            block_number = EventQueue.get()
 
-            # find the block's author
             with orm.db_session:
+                #get block
+                block = Block.get(number=block_number)
+                 # find the block's author
                 author_node = Node.get(pubkey=block.validated_by)
                 if author_node is None:
                     # no such node is remembered by us yet, create it
                     author_node = Node(pubkey=block.validated_by, outliers=0, mean=0, variance=0, n_txs=0, last_txs=[])
 
-            # update our internal mean-variance state and find outliers
-            for tx in block.transactions:
-                process_transaction(author_node, tx)
+                # update our internal mean-variance state and find outliers
+                for tx in block.transactions:
+                    process_transaction(author_node.pubkey, tx)
             with orm.db_session:
                 author_node = Node.get(pubkey=block.validated_by)
                 MinerRisk.add_datapoint(block.validated_by, author_node.outliers, block.number)
         except Exception as e:
+            traceback.print_exc()
             LOGGER.error('exception when calculating the live-time mean&variance happened: {}'.format(str(e)))
 
 
