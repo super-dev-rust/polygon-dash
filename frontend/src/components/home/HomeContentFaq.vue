@@ -33,7 +33,7 @@ const FAQ_TEXT = [
       Can’t find the answer you’re looking for?
       Please contact our team.
     </p>
-    <div>
+    <div class="home-content-block_wrapper">
       <HomeContentFaqBlock v-for="faqBlock in FAQ_TEXT">
         <template #header>
           {{ faqBlock.header }}
@@ -44,7 +44,7 @@ const FAQ_TEXT = [
   </section>
 </template>
 
-<style lang="scss">
+<style lang="scss" scoped>
 @import "@/assets/colors.scss";
 @import "@/assets/breakpoints.scss";
 
@@ -53,12 +53,16 @@ const FAQ_TEXT = [
   .home-content-faq__header {
     padding-bottom: 1.25rem;
   }
+  .home-content-block_wrapper {
+    margin-top: 2rem;
+  }
 }
+
 
 @media screen and (min-width: $breakpoint-desktop) {
   .home-content-faq {
     padding: 6rem 0;
-    .home-content-about__card-block {
+    .home-content-block_wrapper{
       flex-direction: row;
       margin-top: 4rem;
     }
