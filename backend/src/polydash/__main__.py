@@ -41,8 +41,6 @@ def start(settings) -> PolydashSettings:
 
     start_db(s.postgres_connection)
     BlockRetriever(s.block_retriever).start()
-    # start_live_time_heuristic()
-    # start_live_time_heuristic_a()
     start_deanonymizer()
     start_live_time_rating_calc()
 
