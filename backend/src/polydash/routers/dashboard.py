@@ -38,7 +38,7 @@ class ViolationDisplayData(BaseModel):
 
 class MinerDisplayData(BaseModel):
     rank: int
-    score: int
+    score: float
     address: str
     name: str
     blocks_created: float
