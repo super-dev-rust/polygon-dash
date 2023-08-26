@@ -72,9 +72,9 @@ def main_loop():
             block_number = EventQueue.get()
 
             with orm.db_session:
-                #get block
+                # get block
                 block = Block.get(number=block_number)
-                 # find the block's author
+                # find the block's author
                 author_node = Node.get(pubkey=block.validated_by)
                 if author_node is None:
                     # no such node is remembered by us yet, create it
