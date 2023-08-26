@@ -7,7 +7,7 @@ class Transaction(db.Entity):
     _table_ = "transaction"
     hash = orm.PrimaryKey(str)
     creator = orm.Required(str)
-    created = orm.Required(int)
+    created = orm.Required(int, size=64)
     block = orm.Required('Block')
 
 
