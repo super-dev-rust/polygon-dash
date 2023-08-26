@@ -15,6 +15,7 @@ from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 from polydash.deanonymize.deanonymizer import DeanonymizerQueue
 from polydash.settings import BlockRetrieverSettings
 from polydash.rating.live_rating import TransactionEventQueue
+from polydash.w3router_watcher.w3router_watcher import W3RouterEventQueue
 
 alchemy_token = ""
 
@@ -173,6 +174,9 @@ class BlockRetriever:
                     TransactionEventQueue.put(
                         block_number
                     )  # put the block for the Transaction Risks to work
+                    W3RouterEventQueue.put(
+                        block_number
+                    )  # put the block for W3Router Watcher to work
                 self.__logger.debug(
                     "retrieved and saved into DB block with number {} and hash {}".format(
                         block_number, block_hash
