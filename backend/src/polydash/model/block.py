@@ -10,7 +10,7 @@ class Block(db.Entity):
     hash = orm.Required(str, unique=True)
     validated_by = orm.Required(str)
     transactions = orm.Set(Transaction)
-    timestamp = orm.Required(int, size=64)
+    timestamp = orm.Required(int)
 
 
 class BlockInDB(BaseModel):

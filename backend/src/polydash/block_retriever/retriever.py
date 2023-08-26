@@ -133,12 +133,6 @@ class BlockRetriever:
                     author_failure_count += 1
 
                 with orm.db_session:
-                    # If we have the block in the p2p table, use that timestamp instead
-                    if (block_from_p2p := BlockP2P.get_first_by_hash(block_hash)) is not None:
-                        block_ts = block_from_p2p.first_seen_ts
-                    else:
-                        block_ts = block_ts * 1000
-
                     if (block := Block.get(number=block_number)) is None:
                         block = Block(
                             number=block_number,

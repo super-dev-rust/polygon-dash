@@ -18,6 +18,8 @@ from polydash.model.transaction_risk import (
     RiskType,
 )
 
+from backend.src.polydash.model.block_p2p import BlockP2P
+
 TransactionEventQueue = queue.Queue()
 
 # get updated with every call to calculate_mean_variance
@@ -45,17 +47,18 @@ def record_outlier(author_node: NodeStats, block_delta: BlockDelta):
     block_delta.num_outliers += 1
 
 
-def process_transaction(tx: Transaction,
+def process_transaction(tx_hash: str,
+                        tx_finalized: int,
                         block_delta: BlockDelta, author_node: NodeStats,
                         digest: TDigest) -> RiskType:
     # find the transaction in the list of the ones seen by P2P
-    if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
+    if (tx_p2p := TransactionP2P.get_first_by_hash(tx_hash)) is None:
         # We haven't seen this transaction. Record an injection for the node
         record_injection(author_node, block_delta)
         return RiskType.RISK_INJECTION
 
     # get the live-time of this transaction
-    live_time = tx.created - tx_p2p.tx_first_seen
+    live_time = tx_finalized - tx_p2p.tx_first_seen
 
     # The transaction was seen too late. Record an injection for the node
     if live_time < -10000:
@@ -77,7 +80,7 @@ def process_transaction(tx: Transaction,
 
     # Record transaction Risk
     tx_risk = TransactionRisk(
-        hash=tx.hash,
+        hash=tx_hash,
         risk=risk.value,
         live_time=live_time,
     )
@@ -85,6 +88,11 @@ def process_transaction(tx: Transaction,
 
 
 def process_block(block: Block, digest: TDigest):
+    if (block_from_p2p := BlockP2P.get_first_by_hash(block.hash)) is not None:
+        block_ts = block_from_p2p.first_seen_ts
+    else:
+        block_ts = block.timestamp * 1000
+
     block_delta = BlockDelta(
         block_number=block.number,
         hash=block.hash,
@@ -106,7 +114,8 @@ def process_block(block: Block, digest: TDigest):
     num_injects = 0
     num_outliers = 0
     for tx in block.transactions:
-        risk = process_transaction(tx, block_delta, author_node, digest)
+        risk = process_transaction(tx.hash, block_ts,
+                                   block_delta, author_node, digest)
         num_txs += 1
         if risk == RiskType.RISK_INJECTION:
             num_injects += 1
