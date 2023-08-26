@@ -134,7 +134,7 @@ class BlockRetriever:
 
                 with orm.db_session:
                     # If we have the block in the p2p table, use that timestamp instead
-                    if block_from_p2p := BlockP2P.get_first_by_hash(block_hash) is not None:
+                    if (block_from_p2p := BlockP2P.get_first_by_hash(block_hash)) is not None:
                         block_ts = block_from_p2p.first_seen_ts
                     else:
                         block_ts = block_ts * 1000
