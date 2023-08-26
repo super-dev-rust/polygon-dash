@@ -9,6 +9,7 @@ from tdigest import TDigest
 
 from polydash.log import LOGGER
 from polydash.model.block import Block
+from polydash.model.block_p2p import BlockP2P
 from polydash.model.node_risk import NodeStats, BlockDelta
 from polydash.model.risk import MinerRisk
 from polydash.model.transaction import Transaction
@@ -17,8 +18,6 @@ from polydash.model.transaction_risk import (
     TransactionRisk,
     RiskType,
 )
-
-from backend.src.polydash.model.block_p2p import BlockP2P
 
 TransactionEventQueue = queue.Queue()
 

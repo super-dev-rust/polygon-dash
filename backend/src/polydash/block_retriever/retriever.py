@@ -8,7 +8,6 @@ from pony import orm
 
 from polydash.log import LOGGER
 from polydash.model.block import Block
-from polydash.model.block_p2p import BlockP2P
 from polydash.model.transaction import Transaction
 from polydash.rating.live_time_heuristic import EventQueue
 from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
