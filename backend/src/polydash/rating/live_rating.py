@@ -110,26 +110,23 @@ def process_block(block: Block, digest: TDigest):
             num_txs=0,
         )
     num_txs = 0
-    num_injects = 0
-    num_outliers = 0
     for tx in block.transactions:
         risk = process_transaction(tx.hash, block_ts,
                                    block_delta, author_node, digest)
         num_txs += 1
-        if risk == RiskType.RISK_INJECTION:
-            num_injects += 1
-        elif risk == RiskType.RISK_TOO_FAST:
-            num_outliers += 1
     author_node.num_txs += num_txs
 
     # Get max number of transactions from NodeStats
     max_txs = max(ns.num_txs for ns in select(ns for ns in NodeStats))
     c = author_node.num_txs / max_txs
-    d = 1 / (1 + math.exp(-12 * (c - 0.4)))
+    d = 1 / (1 + math.exp(-6 * (c - 0.1)))
     d = 1 if c == 1 else d
     MinerRisk.add_datapoint_new(block.validated_by,
-                                d, num_injects, num_outliers,
-                                num_txs, block.number)
+                                d,
+                                author_node.num_injections,
+                                author_node.num_outliers,
+                                author_node.num_txs,
+                                block.number)
 
 
 def main_loop():
