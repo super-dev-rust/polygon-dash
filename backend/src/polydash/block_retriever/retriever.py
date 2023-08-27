@@ -141,14 +141,18 @@ class BlockRetriever:
                             timestamp=block_ts,
                         )
                     for tx in block_txs:
-                        block.transactions.add(
-                            Transaction(
+                        existing_transaction = Transaction.get(hash=tx[0])
+                        if existing_transaction is None:
+                            db_tx = Transaction(
                                 hash=tx[0],
                                 creator=tx[1],
                                 created=block_ts,
                                 block=block_number,
                             )
-                        )
+                        else:
+                            db_tx = existing_transaction
+                        if db_tx not in block.transactions:
+                            block.transactions.add(db_tx)
                     orm.commit()
                     EventQueue.put(block_number)  # put the block for the heuristics to be updated
                     BlockPoolHeuristicQueue.put(
