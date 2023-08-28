@@ -54,7 +54,7 @@ class BlockViolationsData(BaseModel):
 class MinerBlocksData(BaseModel):
     block_number: int
     block_hash: str
-    risk: int
+    risk: float
     violations: List[BlockViolationsData]
 
 
