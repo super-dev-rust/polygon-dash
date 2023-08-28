@@ -121,7 +121,7 @@ SORT_COLUMNS_MAP = {
 async def get_miners_info(
         page: int = 0,
         pagesize: int = 20,
-        order_by: SortBy = Query(None, title="Sort By"),
+        order_by: SortBy = Query(SortBy.rank, title="Sort By"),
         sort_order: SortOrder = Query(None, title="Sort Order"),
 ) -> DashboardData:
     with db_session():
