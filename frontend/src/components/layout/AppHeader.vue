@@ -84,6 +84,7 @@ import AppTabsBlockchains from '@/components/shared/AppTabsBlockchains.vue';
     }
 
     .guardian-header__switch {
+      visibility: hidden;
       display: flex;
     }
   }

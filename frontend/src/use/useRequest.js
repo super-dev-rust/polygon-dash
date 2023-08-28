@@ -10,7 +10,7 @@ export const useRequest = (request) => {
     error.value = null
     data.value = null
     try {
-      const response = await request(...args)
+      const response = await request(...(args || []))
       data.value = response.data
     } catch (e) {
       error.value = e

@@ -123,8 +123,8 @@ onUnmounted(() => {
         sortable="custom"
       >
         <template #default="{ row }">
-          <span :style="percentToHSL(row.score)">
-            {{ row.score }}
+          <span :style="percentToHSL((row.score * 100).toFixed(2))">
+            {{ (row.score * 100).toFixed(2) }}
           </span>
         </template>
       </el-table-column>
