@@ -264,9 +264,9 @@ async def get_miner_trust_distribution() -> MinersTrustDistribution:
         untrusted = 0 #63-0
 
         for miner in miners:
-            if miner.risk >= 85:
+            if miner.risk * 100 >= 85:
                 trusted += 1
-            elif 64 <= miner.risk < 85:
+            elif 64 <= miner.risk * 100 < 85:
                  untrusted += 1
             else:
                 suspicious += 1
