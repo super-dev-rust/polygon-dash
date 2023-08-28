@@ -182,7 +182,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             raise HTTPException(status_code=404, detail="Miner not found")
 
         blocks_history = MinerRiskHistory.select_by_sql(
-            "SELECT * FROM MinerRiskHistory WHERE pubkey = $address ORDER BY block_number DESC LIMIT $last_blocks")
+            "SELECT * FROM MinerRiskHistory WHERE pubkey = $address ORDER BY block_number ASC LIMIT $last_blocks")
         if not blocks_history:
             return MinerChartData(labels=[], datasets=[], blocks_data=[])
 
