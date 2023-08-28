@@ -18,7 +18,7 @@ class MinerRisk(db.Entity):
     pubkey = orm.PrimaryKey(str)
     block_number = orm.Optional(int, index=True)
     numblocks = orm.Optional(int, default=0, index=True)
-    risk = orm.Optional(float, default=100, index=True)
+    risk = orm.Optional(float, default=0.0, index=True)
 
     @classmethod
     @db_session
