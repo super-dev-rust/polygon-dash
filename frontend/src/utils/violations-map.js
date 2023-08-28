@@ -26,6 +26,6 @@ export const VIOLATIONS_MAP = new Map([
     [VIOLATIONS_NAMES.Outlier, {
         title: VIOLATIONS_NAMES.Outlier,
         description: 'Blockchain node is adding transactions out of nowhere at the last moment.',
-        icon: IconInjection,
+        icon: IconReordering,
     }],
 ])
