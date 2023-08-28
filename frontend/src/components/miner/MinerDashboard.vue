@@ -67,6 +67,7 @@ onMounted(async () => {
       scales: {
         y: {
           beginAtZero: true,
+          type: 'logarithmic',
           stacked: true
         },
         x: {
