@@ -18,7 +18,7 @@ class MinerRisk(db.Entity):
     pubkey = orm.PrimaryKey(str)
     block_number = orm.Optional(int, index=True)
     numblocks = orm.Optional(int, default=0, index=True)
-    risk = orm.Optional(float, default=100, index=True)
+    risk = orm.Optional(float, default=0.0, index=True)
 
     @classmethod
     @db_session
@@ -35,8 +35,8 @@ class MinerRisk(db.Entity):
     @db_session
     def add_datapoint_new(cls, pubkey, d_coef, num_injects, num_outliers, num_txs, block_number):
         datapoint = cls.get(pubkey=pubkey) or cls(pubkey=pubkey)
-        datapoint.risk = d_coef * (0.8 * (1 - num_injects / num_txs)
-                                   + 0.2 * (1 - num_outliers / num_txs))
+        datapoint.risk = d_coef * (0.8 * (1 - (num_injects / num_txs)**0.4)
+                                   + 0.2 * (1 - (num_outliers / num_txs)**0.4))
         datapoint.numblocks += 1
         datapoint.block_number = block_number
         # Add historical record

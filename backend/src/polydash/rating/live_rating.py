@@ -9,6 +9,7 @@ from tdigest import TDigest
 
 from polydash.log import LOGGER
 from polydash.model.block import Block
+from polydash.model.block_p2p import BlockP2P
 from polydash.model.node_risk import NodeStats, BlockDelta
 from polydash.model.risk import MinerRisk
 from polydash.model.transaction import Transaction
@@ -45,17 +46,18 @@ def record_outlier(author_node: NodeStats, block_delta: BlockDelta):
     block_delta.num_outliers += 1
 
 
-def process_transaction(tx: Transaction,
+def process_transaction(tx_hash: str,
+                        tx_finalized: int,
                         block_delta: BlockDelta, author_node: NodeStats,
                         digest: TDigest) -> RiskType:
     # find the transaction in the list of the ones seen by P2P
-    if (tx_p2p := TransactionP2P.get_first_by_hash(tx.hash)) is None:
+    if (tx_p2p := TransactionP2P.get_first_by_hash(tx_hash)) is None:
         # We haven't seen this transaction. Record an injection for the node
         record_injection(author_node, block_delta)
         return RiskType.RISK_INJECTION
 
     # get the live-time of this transaction
-    live_time = tx.created - tx_p2p.tx_first_seen
+    live_time = tx_finalized - tx_p2p.tx_first_seen
 
     # The transaction was seen too late. Record an injection for the node
     if live_time < -10000:
@@ -77,7 +79,7 @@ def process_transaction(tx: Transaction,
 
     # Record transaction Risk
     tx_risk = TransactionRisk(
-        hash=tx.hash,
+        hash=tx_hash,
         risk=risk.value,
         live_time=live_time,
     )
@@ -85,6 +87,11 @@ def process_transaction(tx: Transaction,
 
 
 def process_block(block: Block, digest: TDigest):
+    if (block_from_p2p := BlockP2P.get_first_by_hash(block.hash)) is not None:
+        block_ts = block_from_p2p.first_seen_ts
+    else:
+        block_ts = block.timestamp * 1000
+
     block_delta = BlockDelta(
         block_number=block.number,
         hash=block.hash,
@@ -103,25 +110,23 @@ def process_block(block: Block, digest: TDigest):
             num_txs=0,
         )
     num_txs = 0
-    num_injects = 0
-    num_outliers = 0
     for tx in block.transactions:
-        risk = process_transaction(tx, block_delta, author_node, digest)
+        risk = process_transaction(tx.hash, block_ts,
+                                   block_delta, author_node, digest)
         num_txs += 1
-        if risk == RiskType.RISK_INJECTION:
-            num_injects += 1
-        elif risk == RiskType.RISK_TOO_FAST:
-            num_outliers += 1
     author_node.num_txs += num_txs
 
     # Get max number of transactions from NodeStats
     max_txs = max(ns.num_txs for ns in select(ns for ns in NodeStats))
     c = author_node.num_txs / max_txs
-    d = 1 / (1 + math.exp(-12 * (c - 0.4)))
+    d = 1 / (1 + math.exp(-6 * (c - 0.1)))
     d = 1 if c == 1 else d
     MinerRisk.add_datapoint_new(block.validated_by,
-                                d, num_injects, num_outliers,
-                                num_txs, block.number)
+                                d,
+                                author_node.num_injections,
+                                author_node.num_outliers,
+                                author_node.num_txs,
+                                block.number)
 
 
 def main_loop():

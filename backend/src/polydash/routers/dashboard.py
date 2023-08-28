@@ -38,7 +38,7 @@ class ViolationDisplayData(BaseModel):
 
 class MinerDisplayData(BaseModel):
     rank: int
-    score: int
+    score: float
     address: str
     name: str
     blocks_created: float
@@ -54,7 +54,7 @@ class BlockViolationsData(BaseModel):
 class MinerBlocksData(BaseModel):
     block_number: int
     block_hash: str
-    risk: int
+    risk: float
     violations: List[BlockViolationsData]
 
 
@@ -76,7 +76,7 @@ class MinerChartDataset(BaseModel):
     borderColor: str
     stack: str
     backgroundColor: str
-    data: List[int]
+    data: List[float]
     tension: str
 
 
@@ -91,6 +91,16 @@ class DashboardData(BaseModel):
     data: List[MinerDisplayData]
     total: int
 
+class PieChartDataset(BaseModel):
+    label: str
+    data: List[int]
+    backgroundColor: List[str]
+    hoverBackgroundColor: List[str]
+
+
+class MinersTrustDistribution(BaseModel):
+    labels: List[str]
+    pie_chart: PieChartDataset
 
 SORT_COLUMNS_MAP = {
     SortBy.blocks_created: MinerRisk.numblocks,
@@ -117,7 +127,7 @@ async def get_miners_info(
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
 
         for pubkey, block_number in last_blocks.items():
-            block_delta = BlockDelta.get(number=block_number)
+            block_delta = BlockDelta.get(block_number=block_number)
             if (
                     block_delta is None
                     or block_delta.num_injections == 0
@@ -183,7 +193,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         blocks_data = []
         datasets = []
         for block in list(blocks_history):
-            plagued_block = BlockDelta.get(number=block.block_number)
+            plagued_block = BlockDelta.get(block_number=block.block_number)
             if plagued_block is not None:
                 # TODO:there should be a function that parse violations string
                 violations = [
@@ -216,25 +226,11 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         datasets.append(
             MinerChartDataset(
                 fill=False,
-                order=0,
-                type="",
-                label="Risk Score",
-                borderColor="#798EA4",
-                stack="combined",
-                backgroundColor="#798EA4",
-                data=risk_data,
-                tension=""
-            )
-        )
-
-        datasets.append(
-            MinerChartDataset(
-                fill=False,
                 order=1,
                 type="",
                 label="Violations",
                 borderColor="#CD212A",
-                stack="combined",
+                stack="violations",
                 backgroundColor="#CD212A",
                 data=violations_data,
                 tension=""
@@ -247,11 +243,44 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 type="line",
                 label="Risk Score Line",
                 borderColor="#FA7A35",
-                stack="combined",
                 backgroundColor="#CD212A",
+                stack="risk_score",
                 data=risk_data,
                 tension="0.5"
             )
         )
 
         return MinerChartData(labels=labels, datasets=datasets, blocks_data=blocks_data, total=len(blocks_data))
+
+
+@router.get("/trust-distribution")
+async def get_miner_trust_distribution() -> MinersTrustDistribution:
+    with db_session():
+        miners = MinerRisk.select()
+        labels = ["Trusted", "Suspicious", "Untrusted"]
+        
+        trusted = 0 # 100-85
+        suspicious = 0 #84-64
+        untrusted = 0 #63-0
+
+        for miner in miners:
+            if miner.risk >= 85:
+                trusted += 1
+            elif 64 <= miner.risk < 85:
+                 untrusted += 1
+            else:
+                suspicious += 1
+        
+        
+        result = MinersTrustDistribution(
+            labels=labels,
+            pie_chart=PieChartDataset(
+                label="PieChart",
+                data=[trusted, suspicious, untrusted],
+                backgroundColor=["#58d68d", "#f7dc6f", "#ec7063"],
+                hoverBackgroundColor=["#2ecc71", "#f4d03f", "#e74c3c"]
+            )
+        )
+
+
+    return result

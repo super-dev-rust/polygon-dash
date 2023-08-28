@@ -8,13 +8,13 @@ from pony import orm
 
 from polydash.log import LOGGER
 from polydash.model.block import Block
-from polydash.model.block_p2p import BlockP2P
 from polydash.model.transaction import Transaction
 from polydash.rating.live_time_heuristic import EventQueue
 from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 from polydash.deanonymize.deanonymizer import DeanonymizerQueue
 from polydash.settings import BlockRetrieverSettings
 from polydash.rating.live_rating import TransactionEventQueue
+from polydash.w3router_watcher.w3router_watcher import W3RouterEventQueue
 
 alchemy_token = ""
 
@@ -91,7 +91,7 @@ class BlockRetriever:
     def retriever_thread(self):
         self.__logger.info("block retrieved thread has started")
         # set to None to begin from the latest block; set to some block ID to begin with it
-        next_block_number = 46617051 - 100
+        next_block_number = 46699999
         # next_block_number = None
         # next_block_number = 0
         failure_count = 0
@@ -132,10 +132,6 @@ class BlockRetriever:
                     time.sleep(0.5)
                     author_failure_count += 1
 
-                # If we have the block in the p2p table, use that timestamp instead
-                if block_from_p2p := BlockP2P.get_first_by_hash(block_hash) is not None:
-                    block_ts = block_from_p2p.first_seen_ts
-
                 with orm.db_session:
                     if (block := Block.get(number=block_number)) is None:
                         block = Block(
@@ -144,38 +140,46 @@ class BlockRetriever:
                             validated_by=fetched_block_author,
                             timestamp=block_ts,
                         )
-                    for tx in block_txs:
-                        block.transactions.add(
-                            Transaction(
-                                hash=tx[0],
-                                creator=tx[1],
-                                created=block_ts,
-                                block=block_number,
+
+                        for tx in block_txs:
+                            existing_transaction = Transaction.get(hash=tx[0])
+                            if existing_transaction is None:
+                                db_tx = Transaction(
+                                    hash=tx[0],
+                                    creator=tx[1],
+                                    created=block_ts,
+                                    block=block_number,
+                                )
+                            else:
+                                db_tx = existing_transaction
+                            if db_tx not in block.transactions:
+                                block.transactions.add(db_tx)
+                        orm.commit()
+                        EventQueue.put(block_number)  # put the block for the heuristics to be updated
+                        BlockPoolHeuristicQueue.put(
+                            (
+                                block_number,
+                                block_ts,
+                                block_hash,
+                                block_txs_d,
+                                base_fee,
+                                fetched_block_author,
+                            )
+                        )  # put the block data to the Heuristic A Queue
+                        DeanonymizerQueue.put(
+                            block_number
+                        )  # put the block for the deanon process to work
+                        TransactionEventQueue.put(
+                            block_number
+                        )  # put the block for the Transaction Risks to work
+                        W3RouterEventQueue.put(
+                            block_number
+                        )  # put the block for W3Router Watcher to work
+                        self.__logger.debug(
+                            "retrieved and saved into DB block with number {} and hash {}".format(
+                                block_number, block_hash
                             )
                         )
-                    orm.commit()
-                    EventQueue.put(block_number)  # put the block for the heuristics to be updated
-                    BlockPoolHeuristicQueue.put(
-                        (
-                            block_number,
-                            block_ts,
-                            block_hash,
-                            block_txs_d,
-                            base_fee,
-                            fetched_block_author,
-                        )
-                    )  # put the block data to the Heuristic A Queue
-                    DeanonymizerQueue.put(
-                        block_number
-                    )  # put the block for the deanon process to work
-                    TransactionEventQueue.put(
-                        block_number
-                    )  # put the block for the Transaction Risks to work
-                self.__logger.debug(
-                    "retrieved and saved into DB block with number {} and hash {}".format(
-                        block_number, block_hash
-                    )
-                )
 
                 next_block_number = block_number + 1
                 failure_count = 0
