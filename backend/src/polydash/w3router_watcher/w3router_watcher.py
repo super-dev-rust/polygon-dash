@@ -11,6 +11,7 @@ from polydash.model.risk import MinerRisk
 from polydash.model.deanon_node_by_tx import DeanonNodeByTx
 from polydash.model.deanon_node_by_block import DeanonNodeByBlock
 from polydash.model.peer_to_ip import PeerToIP
+from polydash.settings import W3RouterSettings
 
 W3RouterEventQueue = queue.Queue()
 
@@ -25,8 +26,11 @@ class W3RouterWatcher:
 
     last_top_nodes_list = []
 
+    def __init__(self, settings: W3RouterSettings = W3RouterSettings()):
+        self.settings = settings
+
     def send_nodes_to_router(self):
-        url = "http://localhost/rpc/update_nodes"
+        url = self.settings.w3_rpc_url
         LOGGER.info(
             "Sending new list of nodes to the W3Router: {}".format(
                 self.last_top_nodes_list
@@ -106,25 +110,22 @@ class W3RouterWatcher:
             self.last_top_nodes_list = new_top_nodes
             self.send_nodes_to_router()
 
-
-def main_loop():
-    watcher = W3RouterWatcher()
-    while True:
-        try:
-            # get the block from some other thread; we're not really going to use the block number (at least for now),
-            # but we want to receive the notification itself
-            _ = W3RouterEventQueue.get()
-            with orm.db_session:
-                watcher.check_top_nodes()
-        except Exception as e:
-            traceback.print_exc()
-            LOGGER.error(
-                "exception when checking for the top nodes in W3Router Watcher happened: {}".format(
-                    str(e)
+    def main_loop(self):
+        while True:
+            try:
+                # get the block from some other thread; we're not really going to use the block number (at least for now),
+                # but we want to receive the notification itself
+                _ = W3RouterEventQueue.get()
+                with orm.db_session:
+                    self.check_top_nodes()
+            except Exception as e:
+                traceback.print_exc()
+                LOGGER.error(
+                    "exception when checking for the top nodes in W3Router Watcher happened: {}".format(
+                        str(e)
+                    )
                 )
-            )
 
-
-def start_w3router_watcher():
-    LOGGER.info("Starting W3Router Watcher thread...")
-    threading.Thread(target=main_loop, daemon=True).start()
+    def start(self):
+        LOGGER.info("Starting W3Router Watcher thread...")
+        threading.Thread(target=self.main_loop, daemon=True).start()
