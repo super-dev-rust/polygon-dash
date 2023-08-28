@@ -91,6 +91,16 @@ class DashboardData(BaseModel):
     data: List[MinerDisplayData]
     total: int
 
+class PieChartDataset(BaseModel):
+    label: str
+    data: List[int]
+    backgroundColor: List[str]
+    hoverBackgroundColor: List[str]
+
+
+class MinersTrustDistribution(BaseModel):
+    labels: List[str]
+    pie_chart: PieChartDataset
 
 SORT_COLUMNS_MAP = {
     SortBy.blocks_created: MinerRisk.numblocks,
@@ -255,3 +265,36 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         )
 
         return MinerChartData(labels=labels, datasets=datasets, blocks_data=blocks_data, total=len(blocks_data))
+
+
+@router.get("/trust-distribution")
+async def get_miner_trust_distribution() -> MinersTrustDistribution:
+    with db_session():
+        miners = MinerRisk.select()
+        labels = ["Trusted", "Suspicious", "Untrusted"]
+        
+        trusted = 0 # 100-85
+        suspicious = 0 #84-64
+        untrusted = 0 #63-0
+
+        for miner in miners:
+            if miner.risk >= 85:
+                trusted += 1
+            elif 64 <= miner.risk < 85:
+                 untrusted += 1
+            else:
+                suspicious += 1
+        
+        
+        result = MinersTrustDistribution(
+            labels=labels,
+            pie_chart=PieChartDataset(
+                label="PieChart",
+                data=[trusted, suspicious, untrusted],
+                backgroundColor=["#58d68d", "#f7dc6f", "#ec7063"],
+                hoverBackgroundColor=["#2ecc71", "#f4d03f", "#e74c3c"]
+            )
+        )
+
+
+    return result

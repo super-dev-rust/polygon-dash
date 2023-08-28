@@ -90,3 +90,15 @@ def test_miner_detailed_endpoint(mock_db, client):
     # Should return 100, because we have only 100 blocks
     response = client.get("/dash/miners/0x438308?last_blocks=101")
     assert response.json()['total'] == 100
+    
+def test_miner_trust_distribution(mock_db, client):
+    MinerRisk.add_datapoint("abc", 20, 1)
+    MinerRisk.add_datapoint("ebf", 30, 2)
+    MinerRisk.add_datapoint("ebf", 15, 3)
+    MinerRisk.add_datapoint("abc", 20, 4)
+    MinerRisk.add_datapoint("abc", 20, 5)
+    MinerRisk.add_datapoint("foo", 20, 6)
+        
+    response = client.get("/dash/trust-distribution")
+    assert response.status_code == 200
+    assert response.json()['pie_chart']['data'] == [3, 0, 0]
