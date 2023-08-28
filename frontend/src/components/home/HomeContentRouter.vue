@@ -44,12 +44,14 @@ import AppButton from '@/components/shared/AppButton.vue';
   flex-direction: column;
   text-align: center;
   align-items: center;
+  
 
   .home-content-router__text {
     max-width: 42.5rem;
   }
 
   .home-content-router__chain-tabs {
+    display: none;
     width: 100%;
   }
 
