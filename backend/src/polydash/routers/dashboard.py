@@ -59,6 +59,7 @@ class MinerBlocksData(BaseModel):
 
 
 OUTLIERS_COLOR = "#FCF403"
+TRUST_COLOR = "#32a852"
 
 
 # {label: [ListOfBlockNumbers], datasets: [{
@@ -126,7 +127,7 @@ async def get_miners_info(
     with db_session():
         # TODO: this one is horribly inefficient,
         #  probably should be optimized by caching, etc.
-        miners_by_risk = MinerRisk.select().order_by(MinerRisk.risk)
+        miners_by_risk = MinerRisk.select().order_by(desc(MinerRisk.risk))
         ranks = {m.pubkey: rank for rank, m in enumerate(miners_by_risk)}
         last_blocks = {m.pubkey: m.block_number for m in miners_by_risk}
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
@@ -237,6 +238,19 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             MinerChartDataset(
                 fill=False,
                 order=1,
+                type="line",
+                label="Trust Score Line",
+                borderColor=TRUST_COLOR,
+                backgroundColor=TRUST_COLOR,
+                stack="risk_score",
+                data=risk_data,
+                tension="0.5"
+            )
+        )
+        datasets.append(
+            MinerChartDataset(
+                fill=False,
+                order=2,
                 type="",
                 label="Violations",
                 borderColor="#CD212A",
@@ -250,7 +264,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         datasets.append(
             MinerChartDataset(
                 fill=False,
-                order=2,
+                order=3,
                 type="",
                 label="Outliers (suspected injections)",
                 borderColor=OUTLIERS_COLOR,
@@ -258,19 +272,6 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 backgroundColor=OUTLIERS_COLOR,
                 data=outliers_data,
                 tension=""
-            )
-        )
-        datasets.append(
-            MinerChartDataset(
-                fill=False,
-                order=3,
-                type="line",
-                label="Risk Score Line",
-                borderColor="#FA7A35",
-                backgroundColor="#CD212A",
-                stack="risk_score",
-                data=risk_data,
-                tension="0.5"
             )
         )
 
