@@ -76,7 +76,7 @@ class MinerChartDataset(BaseModel):
     borderColor: str
     stack: str
     backgroundColor: str
-    data: List[int]
+    data: List[float]
     tension: str
 
 
