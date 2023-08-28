@@ -129,22 +129,17 @@ async def get_miners_info(
         #  probably should be optimized by caching, etc.
         miners_by_risk = MinerRisk.select().order_by(desc(MinerRisk.risk))
         ranks = {m.pubkey: rank for rank, m in enumerate(miners_by_risk)}
-        last_blocks = {m.pubkey: m.block_number for m in miners_by_risk}
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
 
-        for pubkey, block_number in last_blocks.items():
-            block_delta = BlockDelta.get(block_number=block_number)
-            if (
-                    block_delta is None
-                    or block_delta.num_injections == 0
-            ):
+        for block in BlockDelta.select().order_by(desc(BlockDelta.block_number)).limit(10000):
+            if block.num_injections == 0:
                 continue
-            violations_by_miner[pubkey].append(
+            violations_by_miner[block.pubkey].append(
                 ViolationDisplayData(
                     type="injection",
                     color="#D22B2B",
-                    last_violation=block_delta.block_time,
-                    violation_severity=block_delta.num_injections,
+                    last_violation=block.block_time,
+                    violation_severity=block.num_injections,
                 )
             )
 
