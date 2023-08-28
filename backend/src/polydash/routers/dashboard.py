@@ -230,6 +230,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 type="",
                 label="Violations",
                 borderColor="#CD212A",
+                stack="violations",
                 backgroundColor="#CD212A",
                 data=violations_data,
                 tension=""
@@ -243,6 +244,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 label="Risk Score Line",
                 borderColor="#FA7A35",
                 backgroundColor="#CD212A",
+                stack="risk_score",
                 data=risk_data,
                 tension="0.5"
             )
