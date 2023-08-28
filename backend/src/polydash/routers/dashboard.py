@@ -132,19 +132,27 @@ async def get_miners_info(
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
 
         for block in BlockDelta.select().order_by(desc(BlockDelta.block_number)).limit(3000):
-            if block.num_injections == 0:
-                continue
-            # only show last three injections for a node
+            # only show last three violations for a node
             if len(violations_by_miner[block.pubkey]) > 2:
                 continue
-            violations_by_miner[block.pubkey].append(
-                ViolationDisplayData(
-                    type="injection",
-                    color="#D22B2B",
-                    last_violation=block.block_time,
-                    violation_severity=block.num_injections,
+            if block.num_injections:
+                violations_by_miner[block.pubkey].append(
+                    ViolationDisplayData(
+                        type="injection",
+                        color="#D22B2B",
+                        last_violation=block.block_time,
+                        violation_severity=block.num_injections,
+                    )
                 )
-            )
+            if block.num_outliers:
+                violations_by_miner[block.pubkey].append(
+                    ViolationDisplayData(
+                        type="outlier",
+                        color=OUTLIERS_COLOR,
+                        last_violation=block.block_time,
+                        violation_severity=block.num_outliers,
+                    )
+                )
 
         total_block_count = sum(m.numblocks for m in miners_by_risk)
         total_miners = miners_by_risk.count()
