@@ -4,6 +4,7 @@ import traceback
 import requests
 
 from pony import orm
+from urllib3.exceptions import MaxRetryError
 
 from polydash.log import LOGGER
 from polydash.model.risk import MinerRisk
@@ -25,18 +26,20 @@ class W3RouterWatcher:
     last_top_nodes_list = []
 
     def send_nodes_to_router(self):
+        url = "http://localhost/rpc/update_nodes"
         LOGGER.info(
             "Sending new list of nodes to the W3Router: {}".format(
                 self.last_top_nodes_list
             )
         )
-        response = requests.post(
-            "http://localhost/rpc/update_nodes", json=self.last_top_nodes_list
-        )
-        if response.status_code != 200:
-            LOGGER.error(
-                "W3Router has returned {} as status code".format(response.status_code)
-            )
+        try:
+            response = requests.post(url, json=self.last_top_nodes_list)
+            if response.status_code != 200:
+                LOGGER.error(
+                    "W3Router has returned {} as status code".format(response.status_code)
+                )
+        except MaxRetryError:
+            LOGGER.error("Can't connect to W3Router at {}".format(url))
 
     def check_top_nodes(self):
         global TOP_NODES_LIST_SIZE
