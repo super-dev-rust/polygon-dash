@@ -140,45 +140,46 @@ class BlockRetriever:
                             validated_by=fetched_block_author,
                             timestamp=block_ts,
                         )
-                    for tx in block_txs:
-                        existing_transaction = Transaction.get(hash=tx[0])
-                        if existing_transaction is None:
-                            db_tx = Transaction(
-                                hash=tx[0],
-                                creator=tx[1],
-                                created=block_ts,
-                                block=block_number,
+
+                        for tx in block_txs:
+                            existing_transaction = Transaction.get(hash=tx[0])
+                            if existing_transaction is None:
+                                db_tx = Transaction(
+                                    hash=tx[0],
+                                    creator=tx[1],
+                                    created=block_ts,
+                                    block=block_number,
+                                )
+                            else:
+                                db_tx = existing_transaction
+                            if db_tx not in block.transactions:
+                                block.transactions.add(db_tx)
+                        orm.commit()
+                        EventQueue.put(block_number)  # put the block for the heuristics to be updated
+                        BlockPoolHeuristicQueue.put(
+                            (
+                                block_number,
+                                block_ts,
+                                block_hash,
+                                block_txs_d,
+                                base_fee,
+                                fetched_block_author,
                             )
-                        else:
-                            db_tx = existing_transaction
-                        if db_tx not in block.transactions:
-                            block.transactions.add(db_tx)
-                    orm.commit()
-                    EventQueue.put(block_number)  # put the block for the heuristics to be updated
-                    BlockPoolHeuristicQueue.put(
-                        (
-                            block_number,
-                            block_ts,
-                            block_hash,
-                            block_txs_d,
-                            base_fee,
-                            fetched_block_author,
+                        )  # put the block data to the Heuristic A Queue
+                        DeanonymizerQueue.put(
+                            block_number
+                        )  # put the block for the deanon process to work
+                        TransactionEventQueue.put(
+                            block_number
+                        )  # put the block for the Transaction Risks to work
+                        W3RouterEventQueue.put(
+                            block_number
+                        )  # put the block for W3Router Watcher to work
+                        self.__logger.debug(
+                            "retrieved and saved into DB block with number {} and hash {}".format(
+                                block_number, block_hash
+                            )
                         )
-                    )  # put the block data to the Heuristic A Queue
-                    DeanonymizerQueue.put(
-                        block_number
-                    )  # put the block for the deanon process to work
-                    TransactionEventQueue.put(
-                        block_number
-                    )  # put the block for the Transaction Risks to work
-                    W3RouterEventQueue.put(
-                        block_number
-                    )  # put the block for W3Router Watcher to work
-                self.__logger.debug(
-                    "retrieved and saved into DB block with number {} and hash {}".format(
-                        block_number, block_hash
-                    )
-                )
 
                 next_block_number = block_number + 1
                 failure_count = 0
