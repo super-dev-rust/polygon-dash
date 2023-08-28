@@ -5,6 +5,7 @@ export const VIOLATIONS_NAMES = {
     Censoring: 'censoring',
     Injection: 'injection',
     Reordering: 'reordering',
+    Outlier: 'outlier',
 }
 export const VIOLATIONS_MAP = new Map([
     [VIOLATIONS_NAMES.Censoring, {
@@ -21,5 +22,10 @@ export const VIOLATIONS_MAP = new Map([
         title: VIOLATIONS_NAMES.Reordering,
         description: 'Blockchain node is reordering transactions.',
         icon: IconReordering,
+    }],
+    [VIOLATIONS_NAMES.Outlier, {
+        title: VIOLATIONS_NAMES.Outlier,
+        description: 'Blockchain node is adding transactions out of nowhere at the last moment.',
+        icon: IconInjection,
     }],
 ])
