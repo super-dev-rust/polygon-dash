@@ -22,7 +22,7 @@ const FAQ_TEXT = [
 </script>
 
 <template>
-  <section class="home-content-faq">
+  <section id="faq" class="home-content-faq">
     <AppHeadingText>Got questions?</AppHeadingText>
     <h2 class="home-content-faq__header">
       FAQs

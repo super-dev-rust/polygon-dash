@@ -11,13 +11,13 @@
         <router-link to="/" class="guardian-footer__link">
           Network monitor
         </router-link>
-        <router-link to="/" class="guardian-footer__link">
+        <router-link :to="{ name: 'home', hash: '#about' }" class="guardian-footer__link">
           About RPC
         </router-link>
-        <router-link to="/" class="guardian-footer__link">
+        <router-link :to="{ name: 'home', hash: '#steps' }" class="guardian-footer__link">
           Set up Router
         </router-link>
-        <router-link to="/" class="guardian-footer__link">
+        <router-link :to="{ name: 'home', hash: '#faq' }" class="guardian-footer__link">
           FAQ
         </router-link>
       </div>

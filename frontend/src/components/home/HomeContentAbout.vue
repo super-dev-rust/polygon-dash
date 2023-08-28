@@ -27,7 +27,7 @@ const CARDS = [
 </script>
 
 <template>
-  <section class="home-content-about">
+  <section id="about" class="home-content-about">
     <AppHeadingText>About</AppHeadingText>
     <h2 class="home-content-about__header">
       Your Compass in the Web3 Odyssey

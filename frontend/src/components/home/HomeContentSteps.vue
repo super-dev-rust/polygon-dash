@@ -20,7 +20,7 @@ const SOCIALS = [
   {
     icon: IconMail,
     title: 'mail@guardianlabs.org',
-    link: 'mailto://mail@guardianlabs.org',
+    link: 'mailto:mail@guardianlabs.org',
   },
   {
     icon: IconTwitter,
@@ -33,40 +33,40 @@ const WALLETS = [
   {
     icon: IconMetamask,
     title: 'Metamask',
-    link: 'https://docs.metamask.io/guide/rpc-api.html#adding-a-new-rpc',
+    link: 'https://support.metamask.io/hc/en-us/articles/360043227612-How-to-add-a-custom-network-RPC',
   },
-  {
-    icon: IconRainbow,
-    title: 'Rainbow',
-    link: 'https://rainbow.me/',
-  },
-  {
-    icon: IconPhantom,
-    title: 'Phantom Wallet',
-    link: 'https://phantom.app/',
-  },
+  // {
+  //   icon: IconRainbow,
+  //   title: 'Rainbow',
+  //   link: 'https://rainbow.me/',
+  // },
+  // {
+  //   icon: IconPhantom,
+  //   title: 'Phantom Wallet',
+  //   link: 'https://phantom.app/',
+  // },
   {
     icon: IconCoinbase,
     title: 'Coinbase Wallet',
-    link: 'https://wallet.coinbase.com/',
+    link: 'https://www.coinbase.com/learn/wallet/How-to-add-custom-networks-Coinbase-Wallet',
   },
   {
     icon: IconTrustWallet,
     title: 'Trust Wallet',
-    link: 'https://trustwallet.com/',
+    link: 'https://community.trustwallet.com/t/how-to-add-a-custom-network-on-the-trust-wallet-mobile-app/626781 ',
   },
-  {
-    icon: IconSafe,
-    title: 'Safe',
-    link: 'https://safe.gnosis.io/',
-  },
+  // {
+  //   icon: IconSafe,
+  //   title: 'Safe',
+  //   link: 'https://safe.gnosis.io/',
+  // },
 ]
 
 
 </script>
 
 <template>
-  <section class="home-content-steps">
+  <section id="steps" class="home-content-steps">
     <AppHeadingText>Experience Unparalleled Trust</AppHeadingText>
     <div class="home-content-steps__wrapper">
       <div>

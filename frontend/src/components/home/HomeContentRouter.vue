@@ -9,20 +9,22 @@ import AppButton from '@/components/shared/AppButton.vue';
       Guardian Router: <br>
       A Web3 Trust Compass
     </h1>
-    <AppTabsBlockchains class="home-content-router__chain-tabs"/>
+    <AppTabsBlockchains class="home-content-router__chain-tabs" />
     <p class="home-content-router__text">
       Experience Web3 with unparalleled trust.
       Sidestep MEV, censorship, and reordering effortlessly through Guardian RPC service.
     </p>
     <div class="home-content-router__buttons">
-      <AppButton
-        type="secondary"
-      >
-        How it works
-      </AppButton>
-      <AppButton>
-        Set up Guardian Router
-      </AppButton>
+      <router-link :to="{ name: 'home', hash: '#about' }" class="no-decoration">
+        <AppButton type="secondary">
+          How it works
+        </AppButton>
+      </router-link>
+      <router-link :to="{ name: 'home', hash: '#steps' }" class="no-decoration">
+        <AppButton>
+          Set up Guardian Router
+        </AppButton>
+      </router-link>
     </div>
   </section>
 </template>
@@ -30,6 +32,10 @@ import AppButton from '@/components/shared/AppButton.vue';
 <style lang="scss">
 @import "@/assets/colors.scss";
 @import "@/assets/breakpoints.scss";
+
+.no-decoration {
+  text-decoration: none;
+}
 
 .home-content-router {
   display: flex;
@@ -71,6 +77,7 @@ import AppButton from '@/components/shared/AppButton.vue';
 @media screen and (min-width: $breakpoint-desktop) {
   .home-content-router {
     margin-top: 6rem;
+
     .home-content-router__chain-tabs {
       display: none;
     }
