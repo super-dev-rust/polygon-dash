@@ -2,20 +2,19 @@
 import AppHeadingText from '@/components/shared/AppHeadingText.vue';
 import HomeContentFaqBlock from '@/components/home/HomeContentFaqBlock.vue';
 
-const DEFAULT_FAQ_TEXT = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed at volutpat sapien. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. In hac habitasse platea dictumst. Nullam enim mi, tempus eget tortor non, lacinia imperdiet nibh. Morbi aliquam justo eu metus feugiat, quis feugiat turpis aliquam. Suspendisse malesuada arcu at mauris lobortis, ac ultricies nibh elementum. Aliquam erat volutpat. Quisque sollicitudin sem vel justo cursus pulvinar. Curabitur scelerisque efficitur pretium.";
 
 const FAQ_TEXT = [
   {
     header: "How do you ensure the accuracy of the node ratings?",
-    text: DEFAULT_FAQ_TEXT,
+    text: "We ensure the accuracy of node ratings by deploying multiple crawlers to fetch data from miners' mempools and matching it with produced blocks. This process allows us to identify inconsistencies such as outliers (transactions inserted right before block creation), injections (transactions not in the mempool but in the block), and censorship (transactions in the mempool but not selected for the block).",
   },
   {
     header: "How often is the data updated on the dashboard?",
-    text: DEFAULT_FAQ_TEXT,
+    text: "Given the rapid block times of the Polygon network, our dashboard keeps pace, updating with every new block.",
   },
   {
-    header: "What happens if a highly-rated node starts displaying malicious behavior?",
-    text: DEFAULT_FAQ_TEXT,
+    header: "What happens if a highly-rated node starts displaying suspicious behavior?",
+    text: "If a node that previously had a high trust score starts exhibiting suspicious behavior, its trust score will decrease significantly. Such nodes are then temporarily sidelined and are not used to route transactions for an extended period. However, we believe in second chances. The node will still be under our continuous monitoring, allowing it the opportunity to regain its trustworthiness. It's worth noting, though, that the journey back to becoming a 'trusted' node will require consistent positive behavior and will be closely watched over time.",
   }
 ];
 
