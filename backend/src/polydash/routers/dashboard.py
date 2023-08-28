@@ -226,25 +226,10 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         datasets.append(
             MinerChartDataset(
                 fill=False,
-                order=0,
-                type="",
-                label="Risk Score",
-                borderColor="#798EA4",
-                stack="combined",
-                backgroundColor="#798EA4",
-                data=risk_data,
-                tension=""
-            )
-        )
-
-        datasets.append(
-            MinerChartDataset(
-                fill=False,
                 order=1,
                 type="",
                 label="Violations",
                 borderColor="#CD212A",
-                stack="combined",
                 backgroundColor="#CD212A",
                 data=violations_data,
                 tension=""
@@ -257,7 +242,6 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 type="line",
                 label="Risk Score Line",
                 borderColor="#FA7A35",
-                stack="combined",
                 backgroundColor="#CD212A",
                 data=risk_data,
                 tension="0.5"
