@@ -161,10 +161,16 @@ async def get_miners_info(
 
         if order_by:
             sort_attr = SORT_COLUMNS_MAP.get(order_by)
-            if sort_order == SortOrder.desc:
-                miners = miners.sort_by(desc(sort_attr))
+            if order_by == SortBy.rank:
+                if sort_order == SortOrder.desc:
+                    miners = miners.sort_by(sort_attr)
+                else:
+                    miners = miners.sort_by(desc(sort_attr))
             else:
-                miners = miners.sort_by(sort_attr)
+                if sort_order == SortOrder.desc:
+                    miners = miners.sort_by(desc(sort_attr))
+                else:
+                    miners = miners.sort_by(sort_attr)
 
         miners = miners.page(page, pagesize)
 
