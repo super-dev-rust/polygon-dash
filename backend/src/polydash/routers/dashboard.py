@@ -91,6 +91,7 @@ class DashboardData(BaseModel):
     data: List[MinerDisplayData]
     total: int
 
+
 class PieChartDataset(BaseModel):
     label: str
     data: List[int]
@@ -101,6 +102,7 @@ class PieChartDataset(BaseModel):
 class MinersTrustDistribution(BaseModel):
     labels: List[str]
     pie_chart: PieChartDataset
+
 
 SORT_COLUMNS_MAP = {
     SortBy.blocks_created: MinerRisk.numblocks,
@@ -176,13 +178,11 @@ async def get_miners_info(
 @router.get("/miners/{address}")
 async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData:
     with db_session():
-
-        miner = MinerRisk.get(pubkey=address)
-        if not miner:
+        if MinerRisk.get(pubkey=address) is None:
             raise HTTPException(status_code=404, detail="Miner not found")
 
-        blocks_history = MinerRiskHistory.select_by_sql(
-            "SELECT * FROM MinerRiskHistory WHERE pubkey = $address ORDER BY block_number ASC LIMIT $last_blocks")
+        blocks_history = MinerRiskHistory.select().where(pubkey=address).order_by(MinerRiskHistory.block_number).limit(
+            last_blocks)
         if not blocks_history:
             return MinerChartData(labels=[], datasets=[], blocks_data=[])
 
@@ -192,36 +192,34 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         violations_data = []
         blocks_data = []
         datasets = []
-        for block in list(blocks_history):
-            plagued_block = BlockDelta.get(block_number=block.block_number)
-            if plagued_block is not None:
-                # TODO:there should be a function that parse violations string
-                violations = [
-                    BlockViolationsData(
-                        type="injection",
-                        color="#D22B2B",
-                        amount=plagued_block.num_injections
-                    )
-                ]
-                # Populate blocks data for now, maybe it will be used later
-                blocks_data.append(
-                    MinerBlocksData(
-                        block_number=block.block_number,
-                        block_hash=plagued_block.hash,
-                        risk=block.risk,
-                        violations=violations
-                    )
+        for block in blocks_history:
+            if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
+                continue
+            # TODO:there should be a function that parse violations string
+            violations = [
+                BlockViolationsData(
+                    type="injection",
+                    color="#D22B2B",
+                    amount=plagued_block.num_injections
                 )
-                # Populate labels(block numbers as strings) for chart
-                labels.append(str(block.block_number))
-                # Populate risk_data for chart
-                risk_data.append(
-                    block.risk
+            ]
+            # Populate blocks data for now, maybe it will be used later
+            blocks_data.append(
+                MinerBlocksData(
+                    block_number=block.block_number,
+                    block_hash=plagued_block.hash,
+                    risk=block.risk,
+                    violations=violations
                 )
-                # Populate violations_data for chart
-                violations_data.append(
-                    plagued_block.num_injections
-                )
+            )
+            # Populate labels(block numbers as strings) for chart
+            labels.append(str(block.block_number))
+
+            # Populate risk_data for chart
+            risk_data.append(block.risk)
+
+            # Populate violations_data for chart
+            violations_data.append(plagued_block.num_injections)
 
         datasets.append(
             MinerChartDataset(
@@ -258,20 +256,19 @@ async def get_miner_trust_distribution() -> MinersTrustDistribution:
     with db_session():
         miners = MinerRisk.select()
         labels = ["Trusted", "Suspicious", "Untrusted"]
-        
-        trusted = 0 # 100-85
-        suspicious = 0 #84-64
-        untrusted = 0 #63-0
+
+        trusted = 0  # 100-85
+        suspicious = 0  # 84-64
+        untrusted = 0  # 63-0
 
         for miner in miners:
             if miner.risk * 100 >= 85:
                 trusted += 1
             elif 64 <= miner.risk * 100 < 85:
-                 untrusted += 1
+                untrusted += 1
             else:
                 suspicious += 1
-        
-        
+
         result = MinersTrustDistribution(
             labels=labels,
             pie_chart=PieChartDataset(
@@ -281,6 +278,5 @@ async def get_miner_trust_distribution() -> MinersTrustDistribution:
                 hoverBackgroundColor=["#2ecc71", "#f4d03f", "#e74c3c"]
             )
         )
-
 
     return result
