@@ -11,14 +11,13 @@ const { sendRequest: getChart, isLoading, data, error } = useRequest(fetchMiner)
 const chart = ref(null);
 const chartData = ref(null);
 const chartArgs = ref({});
-const selectModel = ref(50)
+const selectModel = ref(250)
 const myChart = shallowRef(null)
 
 const selectOptions = [
-  { value: 50, label: '50' },
-  { value: 100, label: '100' },
-  { value: 200, label: '200' },
+  { value: 250, label: '250' },
   { value: 500, label: '500' },
+  { value: 750, label: '750' },
   { value: 1000, label: '1000' },
 ]
 
@@ -58,7 +57,6 @@ const updateChart = async () => {
 
 onMounted(async () => {
   await fetchChartData();
-  console.log('chart', chart.value);
   myChart.value = new Chart(chart.value, {
     type: 'bar',
     data: {

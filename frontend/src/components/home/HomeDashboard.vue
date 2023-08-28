@@ -79,7 +79,7 @@ const percentToHSL = (percent) => {
   if (percent > 100) {
     percent = 100;
   }
-  const hue = 120 - (percent / 100) * 120;
+  const hue = (percent / 100) * 120;
   return { 'color': `hsl(${hue}, 100%, 30%)` };
 };
 
@@ -117,20 +117,21 @@ onUnmounted(() => {
         sortable="custom"
       />
       <el-table-column
-        label="Risk"
+        label="Trust"
         prop="score"
         width="90"
         sortable="custom"
       >
         <template #default="{ row }">
-          <span :style="percentToHSL(row.score)">
-            {{ row.score }}
+          <span :style="percentToHSL((row.score * 100).toFixed(2))">
+            {{ (row.score * 100).toFixed(2) }}
           </span>
         </template>
       </el-table-column>
       <el-table-column
         prop="address"
         label="Address"
+        width="205"
       >
         <template #default="{ row }">
           <div class="home-dashboard__table-address">
@@ -148,31 +149,10 @@ onUnmounted(() => {
         </template>
       </el-table-column>
       <el-table-column
-        prop="name"
-        label="Entity name"
-        width="200"
-      >
-        <template #default="{ row }">
-          <el-tag class="home-dashboard__table-entity">
-            {{ row.name }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="blocks_created"
-        label="Blocks"
-        width="95"
-        sortable="custom"
-      >
-        <template #default="{ row }">
-          {{ (row.blocks_created * 100).toFixed(1) }}%
-        </template>
-      </el-table-column>
-      <el-table-column
         prop="rank"
         label="Violations"
         class-name="home-dashboard__table-violations"
-        min-width="115"
+        min-width="120"
       >
         <template #default="{ row }">
           <el-tag
@@ -196,6 +176,27 @@ onUnmounted(() => {
           </el-tag>
         </template>
       </el-table-column>
+      <el-table-column
+        prop="blocks_created"
+        label="Blocks"
+        width="90"
+        sortable="custom"
+      >
+        <template #default="{ row }">
+          {{ (row.blocks_created * 100).toFixed(1) }}%
+        </template>
+      </el-table-column>
+      <el-table-column
+        prop="name"
+        label="Entity name"
+        width="180"
+      >
+        <template #default="{ row }">
+          <el-tag class="home-dashboard__table-entity">
+            {{ row.name }}
+          </el-tag>
+        </template>
+      </el-table-column>
     </el-table>
     <el-pagination
       v-if="tableData.length"
@@ -213,6 +214,8 @@ onUnmounted(() => {
 </template>
 
 <style lang="scss">
+@import "@/assets/breakpoints.scss";
+
 .home-dashboard {
   padding: 4rem 0;
 
@@ -282,7 +285,7 @@ onUnmounted(() => {
         display: none;
       }
 
-      @media (min-width: 1050px) {
+      @media screen and (min-width: $breakpoint-desktop) {
         .home-dashboard__table-violation-text {
           display: inline-block;
           height: 100%;

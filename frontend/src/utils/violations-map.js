@@ -3,7 +3,7 @@ import IconInjection from "@/assets/icons/icon-injection.svg"
 import IconReordering from "@/assets/icons/icon-reordering.svg"
 export const VIOLATIONS_NAMES = {
     Censoring: 'censoring',
-    Injection: 'injections',
+    Injection: 'injection',
     Reordering: 'reordering',
 }
 export const VIOLATIONS_MAP = new Map([
