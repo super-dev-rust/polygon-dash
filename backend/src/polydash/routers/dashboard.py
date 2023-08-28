@@ -58,6 +58,9 @@ class MinerBlocksData(BaseModel):
     violations: List[BlockViolationsData]
 
 
+OUTLIERS_COLOR = "#FCF403"
+
+
 # {label: [ListOfBlockNumbers], datasets: [{
 #     label: "RiskScore",
 #     backgroundColor: "#BEBEBE",
@@ -192,6 +195,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         violations_data = []
         blocks_data = []
         datasets = []
+        outliers_data = []
         for block in blocks_history:
             if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
                 continue
@@ -201,8 +205,14 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                     type="injection",
                     color="#D22B2B",
                     amount=plagued_block.num_injections
+                ),
+                BlockViolationsData(
+                    type="outlier",
+                    color=OUTLIERS_COLOR,
+                    amount=plagued_block.num_outliers
                 )
             ]
+
             # Populate blocks data for now, maybe it will be used later
             blocks_data.append(
                 MinerBlocksData(
@@ -221,6 +231,8 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             # Populate violations_data for chart
             violations_data.append(plagued_block.num_injections)
 
+            outliers_data.append(plagued_block.num_outliers)
+
         datasets.append(
             MinerChartDataset(
                 fill=False,
@@ -234,10 +246,24 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 tension=""
             )
         )
+
         datasets.append(
             MinerChartDataset(
                 fill=False,
                 order=2,
+                type="",
+                label="Outliers (suspected injections)",
+                borderColor=OUTLIERS_COLOR,
+                stack="violations",
+                backgroundColor=OUTLIERS_COLOR,
+                data=outliers_data,
+                tension=""
+            )
+        )
+        datasets.append(
+            MinerChartDataset(
+                fill=False,
+                order=3,
                 type="line",
                 label="Risk Score Line",
                 borderColor="#FA7A35",
