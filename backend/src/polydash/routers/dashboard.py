@@ -131,8 +131,11 @@ async def get_miners_info(
         ranks = {m.pubkey: rank for rank, m in enumerate(miners_by_risk)}
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
 
-        for block in BlockDelta.select().order_by(desc(BlockDelta.block_number)).limit(10000):
+        for block in BlockDelta.select().order_by(desc(BlockDelta.block_number)).limit(3000):
             if block.num_injections == 0:
+                continue
+            # only show last three injections for a node
+            if len(violations_by_miner[block.pubkey]) > 2:
                 continue
             violations_by_miner[block.pubkey].append(
                 ViolationDisplayData(
