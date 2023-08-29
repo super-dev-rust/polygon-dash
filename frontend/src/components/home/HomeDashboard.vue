@@ -160,6 +160,7 @@ onUnmounted(() => {
             v-for="(violation, index) in row.violations"
             :key="index + violation.type"
             class="home-dashboard__table-violation"
+            :class="{ 'el-tag--warning': violation.type === 'outlier' }"
           >
             <el-tooltip
               effect="dark"
@@ -272,6 +273,12 @@ onUnmounted(() => {
         .el-tag {
           --el-tag-text-color: var(--color-text-danger);
           --el-tag-bg-color: var(--color-background-danger);
+          border: 0;
+        }
+        
+        .el-tag--warning {
+          --el-tag-text-color:lightyellow;
+          --el-tag-bg-color: #FFC300 ;
           border: 0;
         }
       }
