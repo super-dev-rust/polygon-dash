@@ -4,7 +4,6 @@ import traceback
 import requests
 
 from pony import orm
-from urllib3.exceptions import MaxRetryError
 
 from polydash.log import LOGGER
 from polydash.model.risk import MinerRisk
@@ -43,7 +42,7 @@ class W3RouterWatcher:
                 LOGGER.error(
                     "W3Router has returned {} as status code".format(response.status_code)
                 )
-                return False
+                return True
         except requests.exceptions.ConnectionError:
             LOGGER.error("Can't connect to W3Router at {}".format(url))
             return True
@@ -116,7 +115,6 @@ class W3RouterWatcher:
 
         if new_top_nodes != self.last_top_nodes_list or self.last_send_failed:
             self.last_top_nodes_list = new_top_nodes
-            self.last_send_failed = True
             self.last_send_failed = self.send_nodes_to_router()
 
     def main_loop(self):
