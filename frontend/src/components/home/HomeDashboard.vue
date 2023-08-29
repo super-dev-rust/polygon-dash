@@ -40,7 +40,6 @@ const updateTableSort = async ({ prop, order }) => {
   }
   tableSort.value.order_by = prop;
   tableSort.value.sort_order = ORDER_MAP[order];
-  console.log('tableSort', tableSort.value);
   await fetchTableData();
 };
 
@@ -84,7 +83,8 @@ const percentToHSL = (percent) => {
 };
 
 const getViolationTooltip = ({ type, last_violation, violation_severity }) => {
-  return `${violationsMap[type].description}` +
+
+  return `${violationsMap[type].description }` +
     `${last_violation ? `\nLast violation: ${new Date(last_violation * 1000)}` : ''}` +
     `${violation_severity ? `\nSeverity: ${violation_severity}` : ''}`;
 };
@@ -109,6 +109,7 @@ onUnmounted(() => {
       v-loading="isLoading"
       class="home-dashboard__table"
       @sort-change="updateTableSort"
+      :default-sort="{prop: 'rank', order: 'ascending'}"
     >
       <el-table-column
         prop="rank"
