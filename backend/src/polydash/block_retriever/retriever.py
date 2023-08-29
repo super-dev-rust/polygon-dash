@@ -5,6 +5,7 @@ import json
 import threading
 import time
 from pony import orm
+from pony.orm import desc
 
 from polydash.log import LOGGER
 from polydash.model.block import Block
@@ -90,12 +91,17 @@ class BlockRetriever:
 
     def retriever_thread(self):
         self.__logger.info("block retrieved thread has started")
-        # set to None to begin from the latest block; set to some block ID to begin with it
+
         next_block_number = 46699999
+        with orm.db_session:
+            last_block_in_db = Block.select().order_by(desc(Block.number)).first()
+            if last_block_in_db is not None and last_block_in_db.number > next_block_number:
+                next_block_number = last_block_in_db.number + 1
         # next_block_number = None
         # next_block_number = 0
         failure_count = 0
         while True:
+            block_already_in_db = False
             if failure_count > 3:
                 self.__logger.error(
                     "giving up trying to retrieve block {}, moving to the next one...".format(
@@ -180,6 +186,8 @@ class BlockRetriever:
                                 block_number, block_hash
                             )
                         )
+                    else:
+                        block_already_in_db = True
 
                 next_block_number = block_number + 1
                 failure_count = 0
@@ -188,7 +196,10 @@ class BlockRetriever:
                 # TODO: instead redo the logger to save tracebacks
                 traceback.print_exc()
                 self.__logger.error("exception when retrieving block happened: {}".format(e))
-            time.sleep(2)
+            # Add just some timeout to avoid spamming the server
+            time.sleep(0.1)
+            if not block_already_in_db:
+                time.sleep(1)
 
     def start(self):
         self.__logger.info("Starting block retriever thread...")
