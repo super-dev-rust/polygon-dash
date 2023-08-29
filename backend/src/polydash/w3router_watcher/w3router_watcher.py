@@ -24,10 +24,11 @@ class W3RouterWatcher:
     is received and, if there are any changes, push them into the W3Router itself
     """
 
-    last_top_nodes_list = []
 
     def __init__(self, settings: W3RouterSettings = W3RouterSettings()):
+        self.last_top_nodes_list = []
         self.settings = settings
+        self.last_send_failed = False
 
     def send_nodes_to_router(self):
         url = self.settings.w3_rpc_url
@@ -42,8 +43,15 @@ class W3RouterWatcher:
                 LOGGER.error(
                     "W3Router has returned {} as status code".format(response.status_code)
                 )
-        except MaxRetryError:
+                return False
+        except requests.exceptions.ConnectionError:
             LOGGER.error("Can't connect to W3Router at {}".format(url))
+            return True
+        except Exception as e:
+            traceback.print_exc()
+            LOGGER.error("Exception when trying to connect to W3Router: {}".format(str(e)))
+            return True
+        return False
 
     def check_top_nodes(self):
         global TOP_NODES_LIST_SIZE
@@ -106,9 +114,10 @@ class W3RouterWatcher:
                 if len(new_top_nodes) >= TOP_NODES_LIST_SIZE:
                     break
 
-        if new_top_nodes != self.last_top_nodes_list:
+        if new_top_nodes != self.last_top_nodes_list or self.last_send_failed:
             self.last_top_nodes_list = new_top_nodes
-            self.send_nodes_to_router()
+            self.last_send_failed = True
+            self.last_send_failed = self.send_nodes_to_router()
 
     def main_loop(self):
         while True:
