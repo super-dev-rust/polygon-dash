@@ -5,6 +5,26 @@ import { useRequest } from '@/use/useRequest';
 import { fetchMiner } from '@/api/api-client';
 import Chart from 'chart.js/auto';
 
+const DEFAULT_CONFIG = {
+      scales: {
+        y: {
+          beginAtZero: true,
+          type: 'logarithmic',
+          stacked: true
+        },
+        x: {
+          beginAtZero: true,
+          stacked: true
+        }
+      },
+      responsive: true,
+      legend: {
+        labels: {
+          fontColor: 'red',
+        }
+      }
+    };
+
 const router = useRouter();
 const { sendRequest: getChart, isLoading, data, error } = useRequest(fetchMiner);
 
@@ -63,27 +83,7 @@ onMounted(async () => {
       labels: chartData.value.labels,
       datasets: chartData.value.datasets,
     },
-    options: {
-      scales: {
-        y: {
-          beginAtZero: true,
-          type: 'logarithmic',
-          stacked: true
-        },
-        x: {
-          beginAtZero: true,
-          stacked: true
-        }
-      },
-
-      responsive: true,
-
-      legend: {
-        labels: {
-          fontColor: 'red',
-        }
-      }
-    }
+    options: chartData.value.options ? chartData.value.options : DEFAULT_CONFIG,
   });
   console.log('myChart', myChart);
 });
