@@ -6,24 +6,24 @@ import { fetchMiner } from '@/api/api-client';
 import Chart from 'chart.js/auto';
 
 const DEFAULT_CONFIG = {
-      scales: {
-        y: {
-          beginAtZero: true,
-          type: 'logarithmic',
-          stacked: true
-        },
-        x: {
-          beginAtZero: true,
-          stacked: true
-        }
-      },
-      responsive: true,
-      legend: {
-        labels: {
-          fontColor: 'red',
-        }
-      }
-    };
+  scales: {
+    y: {
+      beginAtZero: true,
+      type: 'logarithmic',
+      stacked: true
+    },
+    x: {
+      beginAtZero: true,
+      stacked: true
+    }
+  },
+  responsive: true,
+  legend: {
+    labels: {
+      fontColor: 'red',
+    }
+  }
+};
 
 const router = useRouter();
 const { sendRequest: getChart, isLoading, data, error } = useRequest(fetchMiner);
@@ -77,6 +77,16 @@ const updateChart = async () => {
 
 onMounted(async () => {
   await fetchChartData();
+  const gradientLine = chart.value.getContext('2d').createLinearGradient(0, 0, 0, 400);
+  gradientLine.addColorStop(0, 'green');
+  gradientLine.addColorStop(0.5, 'yellow');
+  gradientLine.addColorStop(1, 'red');
+  const lineDataset = chartData.value.datasets.find((dataset) => dataset.type === 'line');
+  if (lineDataset) {
+    lineDataset.backgroundColor = gradientLine;
+    lineDataset.borderColor = gradientLine;
+  }
+
   myChart.value = new Chart(chart.value, {
     type: 'bar',
     data: {
