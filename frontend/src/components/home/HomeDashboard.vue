@@ -204,7 +204,7 @@ onUnmounted(() => {
       v-if="tableData.length"
       class="home-dashboard__pagination"
       small
-      layout="prev, pager, next, jumper, sizes, total"
+      layout="prev, pager, next, jumper, ->, sizes, total"
       :total="totalTableEntriesCount"
       :page-sizes="[10, 20, 30, 40]"
       v-model:page-size="tableState.pageSize"
