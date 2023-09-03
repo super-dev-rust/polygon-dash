@@ -1,6 +1,6 @@
-import IconForbidden from "@/assets/icons/icon-forbidden.svg"
-import IconInjection from "@/assets/icons/icon-injection.svg"
-import IconReordering from "@/assets/icons/icon-reordering.svg"
+import IconForbidden from "@/assets/icons/icon-forbidden.svg?skipsvgo"
+import IconInjection from "@/assets/icons/icon-injection.svg?skipsvgo"
+import IconReordering from "@/assets/icons/icon-reordering.svg?skipsvgo"
 export const VIOLATIONS_NAMES = {
     Censoring: 'censoring',
     Injection: 'injection',

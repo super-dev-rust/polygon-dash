@@ -277,8 +277,8 @@ onUnmounted(() => {
         }
         
         .el-tag--warning {
-          --el-tag-text-color:lightyellow;
-          --el-tag-bg-color: #FFC300 ;
+          --el-tag-text-color:var(--color-text-warning);
+          --el-tag-bg-color: var(--color-background-warning);
           border: 0;
         }
       }

@@ -12,7 +12,10 @@
   --vt-c-grey-D8: #D8DCDE;
 
   --vt-c-red-eb: #EB5757;
-  --vt-c-red-fb: #FBDBDB
+  --vt-c-red-fb: #FBDBDB;
+
+  --vt-c-yellow-eb: #ec9640;
+  --vt-c-yellow-fb: #f3c79b80;
 }
 
 /* semantic color variables for this project */
@@ -20,6 +23,7 @@
   --color-background: var(--vt-c-white);
   --color-background-mute: var(--vt-c-pearl);
   --color-background-danger: var(--vt-c-red-fb);
+  --color-background-warning: var(--vt-c-yellow-fb);
 
   --color-border: var(--vt-c-grey-D8);
 
@@ -27,6 +31,7 @@
   --color-heading-mute: var(--vt-c-grey-85);
   --color-text: var(--vt-c-black);
   --color-text-danger: var(--vt-c-red-eb);
+  --color-text-warning: var(--vt-c-yellow-eb);
 }
 
 /*@media (prefers-color-scheme: dark) {*/
