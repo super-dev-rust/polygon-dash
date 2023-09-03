@@ -44,7 +44,7 @@ import AppButton from '@/components/shared/AppButton.vue';
   flex-direction: column;
   text-align: center;
   align-items: center;
-  
+
 
   .home-content-router__text {
     max-width: 42.5rem;
@@ -61,6 +61,10 @@ import AppButton from '@/components/shared/AppButton.vue';
     gap: 0.75rem;
     margin-top: 1.5rem;
     width: 100%;
+
+    button {
+      width: 100%;
+    }
   }
 }
 

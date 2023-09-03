@@ -63,7 +63,9 @@ import AppTabsBlockchains from '@/components/shared/AppTabsBlockchains.vue';
 
 @media (min-width: $breakpoint-desktop) {
   .guardian-header {
-    padding-top: 1rem;
+    padding: 1rem 2rem 0;
+    max-width: calc(1216px + 4rem);
+    margin: 0 auto;
 
     nav {
       display: flex;
@@ -84,8 +86,7 @@ import AppTabsBlockchains from '@/components/shared/AppTabsBlockchains.vue';
     }
 
     .guardian-header__switch {
-      visibility: hidden;
-      display: flex;
+      display: none;
     }
   }
 }

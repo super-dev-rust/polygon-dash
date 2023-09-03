@@ -31,8 +31,8 @@
 @import "@/assets/breakpoints.scss";
 
 .guardian-footer {
-  padding-bottom: 2rem;
-  padding-top: 2rem;
+  padding-bottom: 1rem;
+  padding-top: 1rem;
   background: $gray-50;
   .guardian-footer__central-navigation {
     display: none;
@@ -67,15 +67,18 @@
 
 @media (min-width: $breakpoint-tablet) {
   .guardian-footer {
-    padding-bottom: 2rem;
   }
 }
 
 @media (min-width: $breakpoint-desktop) {
   .guardian-footer {
-    padding-bottom: 1rem;
-    padding-top: 1rem;
+    padding-bottom: 2rem;
+    padding-top: 2rem;
+
     nav {
+      max-width: calc(1216px + 4rem);
+      margin: 0 auto;
+      padding: 0 1rem;
       display: flex;
       gap: 1.5rem;
       justify-content: space-between;
@@ -87,7 +90,7 @@
         display: flex;
         gap: 1.5rem;
         justify-content: center;
-    } 
+    }
     .guardian-footer__home-link {
       display: initial;
       color: $color-text-heading;

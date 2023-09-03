@@ -4,6 +4,7 @@
 
 main {
   padding: 0 0.6rem;
+  min-height: 92vh;
 }
 
 h1 {
@@ -33,6 +34,7 @@ p {
 @media screen and (min-width: $breakpoint-tablet) {
   main {
     padding: 0 2rem;
+    min-height: 92vh;
   }
 
   h1 {
