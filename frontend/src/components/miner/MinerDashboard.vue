@@ -41,6 +41,15 @@ const selectOptions = [
   { value: 1000, label: '1000' },
 ]
 
+const setGradientLine = (dataset) => {
+  const gradientLine = chart.value.getContext('2d').createLinearGradient(0, 0, 0, 400);
+  gradientLine.addColorStop(0, 'green');
+  gradientLine.addColorStop(0.8, 'yellow');
+  gradientLine.addColorStop(1, 'red');
+  dataset.backgroundColor = gradientLine;
+  dataset.borderColor = gradientLine;
+}
+
 const fetchChartData = async () => {
   if (isLoading.value) {
     return;
@@ -66,6 +75,10 @@ const fetchChartData = async () => {
 };
 
 const updateData = (datasets, labels) => {
+  const lineDataset = datasets.find((dataset) => dataset.type === 'line');
+  if (lineDataset) {
+    setGradientLine(lineDataset);
+  }
   myChart.value.data.datasets = datasets;
   myChart.value.data.labels = labels;
   myChart.value.update();
@@ -77,14 +90,9 @@ const updateChart = async () => {
 
 onMounted(async () => {
   await fetchChartData();
-  const gradientLine = chart.value.getContext('2d').createLinearGradient(0, 0, 0, 400);
-  gradientLine.addColorStop(0, 'green');
-  gradientLine.addColorStop(0.5, 'yellow');
-  gradientLine.addColorStop(1, 'red');
   const lineDataset = chartData.value.datasets.find((dataset) => dataset.type === 'line');
   if (lineDataset) {
-    lineDataset.backgroundColor = gradientLine;
-    lineDataset.borderColor = gradientLine;
+    setGradientLine(lineDataset);
   }
 
   myChart.value = new Chart(chart.value, {
