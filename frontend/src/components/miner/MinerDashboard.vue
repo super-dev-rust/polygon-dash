@@ -53,6 +53,14 @@ const setGradientLine = (dataset) => {
   dataset.borderColor = gradientLine;
 }
 
+const getGradientLineLabelColor = () => {
+  const gradientFill = chart.value.getContext('2d').createLinearGradient(0, 0, 0, 33);
+  gradientFill.addColorStop(0, 'green');
+  gradientFill.addColorStop(0.5, 'yellow');
+  gradientFill.addColorStop(1, 'red');
+  return gradientFill;
+}
+
 const fetchChartData = async () => {
   if (isLoading.value) {
     return;
@@ -112,6 +120,13 @@ onMounted(async () => {
           onClick: async (evt, legendItem, legend) => {
             Chart.defaults.plugins.legend.onClick(evt, legendItem, legend)
             updateChartGradient();
+          },
+          labels: {
+            generateLabels: (chart) => {
+              let defaultLabels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+              defaultLabels[0].fillStyle = getGradientLineLabelColor();
+              return defaultLabels;
+            }
           }
         }
       },
@@ -130,13 +145,8 @@ onMounted(async () => {
       </el-option>
     </el-select>
     <div v-loading="isLoading" class="miner-dashboard__chart-container">
-      <canvas
-        v-if="chartData"
-        ref="chart"
-        class="miner-dashboard__chart"
-        @onDatasetHidden="updateChartGradient"
-        @onDatasetShown="updateChartGradient"
-      />
+      <canvas v-if="chartData" ref="chart" class="miner-dashboard__chart" @onDatasetHidden="updateChartGradient"
+        @onDatasetShown="updateChartGradient" />
     </div>
   </div>
 </template>
