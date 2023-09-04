@@ -58,7 +58,7 @@ class MinerBlocksData(BaseModel):
     violations: List[BlockViolationsData]
 
 
-OUTLIERS_COLOR = "#FCF403"
+OUTLIERS_COLOR = "#FFA450"
 TRUST_COLOR = "#32a852"
 
 
