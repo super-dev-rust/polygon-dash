@@ -75,32 +75,9 @@ class MinerDisplayData(BaseModel):
     violations: List[ViolationDisplayData]
 
 
-class BlockViolationsData(BaseModel):
-    type: str
-    color: str  # #D22B2B for injection, #D2B22B for censoring, #2BD22B for reordering
-    amount: int  # 1 for now
-
-
-class MinerBlocksData(BaseModel):
-    block_number: int
-    block_hash: str
-    risk: float
-    violations: List[BlockViolationsData]
-
-
 OUTLIERS_COLOR = "#FFA450"
 TRUST_COLOR = "#32a852"
 
-
-# {label: [ListOfBlockNumbers], datasets: [{
-#     label: "RiskScore",
-#     backgroundColor: "#BEBEBE",
-#     borderColor: "#BEBEBE",
-#     stack: "combined",
-#     fill: false,
-#     order: 0,
-#     data: [ListOfRiskScores]
-# },{
 
 class MinerChartDataset(BaseModel):
     fill: bool = False
@@ -110,7 +87,7 @@ class MinerChartDataset(BaseModel):
     borderColor: str
     stack: str
     backgroundColor: str
-    data: List[float|None]
+    data: List[float | None]
     tension: Optional[str]
     yAxisID: str = TRUST_SCORE_Y_AXIS
 
@@ -118,7 +95,6 @@ class MinerChartDataset(BaseModel):
 class MinerChartData(BaseModel):
     labels: List[str]
     datasets: List[MinerChartDataset]
-    blocks_data: List[MinerBlocksData]
     options: Optional[dict] = CHARTJS_OPTIONS
     total: int
 
@@ -238,14 +214,13 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         labels = []
         risk_data = []
         violations_data = []
-        blocks_data = []
         outliers_data = []
 
         for block in blocks_history:
             if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
                 continue
 
-            # Populate labels(block numbers as strings) and data for chart
+            # Populate labels(block numbers as strings) for chart
             labels.append(str(block.block_number))
             if block.pubkey == address:
                 risk_data.append(block.risk * 100.0)
@@ -288,8 +263,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         return MinerChartData(
             labels=labels,
             datasets=datasets,
-            blocks_data=blocks_data,
-            total=len(blocks_data))
+            total=len(labels))
 
 
 @router.get("/trust-distribution")
