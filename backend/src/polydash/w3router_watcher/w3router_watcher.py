@@ -4,7 +4,6 @@ import traceback
 import requests
 
 from pony import orm
-from urllib3.exceptions import MaxRetryError
 
 from polydash.log import LOGGER
 from polydash.model.risk import MinerRisk
@@ -16,6 +15,7 @@ from polydash.settings import W3RouterSettings
 W3RouterEventQueue = queue.Queue()
 
 TOP_NODES_LIST_SIZE = 10
+BOR_RPC_PORT = 8545
 
 
 class W3RouterWatcher:
@@ -23,7 +23,6 @@ class W3RouterWatcher:
     Purpose of this class is to recalculate the list of the most trusted nodes every time a new block
     is received and, if there are any changes, push them into the W3Router itself
     """
-
 
     def __init__(self, settings: W3RouterSettings = W3RouterSettings()):
         self.last_top_nodes_list = []
@@ -43,7 +42,7 @@ class W3RouterWatcher:
                 LOGGER.error(
                     "W3Router has returned {} as status code".format(response.status_code)
                 )
-                return False
+                return True
         except requests.exceptions.ConnectionError:
             LOGGER.error("Can't connect to W3Router at {}".format(url))
             return True
@@ -107,7 +106,9 @@ class W3RouterWatcher:
                 ip = node_ip[0].ip
                 if ip in new_top_nodes.values():
                     continue
-                new_top_nodes[current_priority] = ip
+                # We store original P2P connection node:port
+                # We must change it to look like normal RPC URL instead
+                new_top_nodes[current_priority] = f"http://{ip.split(':')[0]}:{BOR_RPC_PORT}"
                 current_priority += 1
 
                 # if we have gathered enough nodes information, finish
@@ -116,7 +117,6 @@ class W3RouterWatcher:
 
         if new_top_nodes != self.last_top_nodes_list or self.last_send_failed:
             self.last_top_nodes_list = new_top_nodes
-            self.last_send_failed = True
             self.last_send_failed = self.send_nodes_to_router()
 
     def main_loop(self):
