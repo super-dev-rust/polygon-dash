@@ -1,14 +1,44 @@
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pony.orm import db_session, desc
-from pydantic import BaseModel
+from pydantic import BaseModel, Json
 
 from polydash.log import LOGGER
 from polydash.model.node_risk import BlockDelta
 from polydash.model.risk import MinerRisk, MinerRiskHistory
 from polydash.model.plagued_node import PlaguedBlock
+
+TRUST_SCORE_Y_AXIS = "percentage"
+VIOLATIONS_Y_AXIS = "num_violations"
+
+CHARTJS_OPTIONS = {
+    "scales": {
+        TRUST_SCORE_Y_AXIS: {
+            "max": 100,
+            "min": 0,
+            "type": 'linear',
+            "position": 'left'
+        },
+        VIOLATIONS_Y_AXIS: {
+            "ticks": {"beginAtZero": True, "color": "red"},
+            "type": 'linear',
+            "grid": {"display": False},
+            "position": 'right'
+        },
+        "x": {
+            "beginAtZero": True,
+            "stacked": True
+        }
+    },
+    "responsive": True,
+    "legend": {
+        "labels": {
+            "fontColor": 'red',
+        }
+    }
+}
 
 router = APIRouter(
     prefix="/dash",
@@ -82,12 +112,14 @@ class MinerChartDataset(BaseModel):
     backgroundColor: str
     data: List[float]
     tension: str
+    yAxisID: str = TRUST_SCORE_Y_AXIS
 
 
 class MinerChartData(BaseModel):
     labels: List[str]
     datasets: List[MinerChartDataset]
     blocks_data: List[MinerBlocksData]
+    options: Optional[dict] = CHARTJS_OPTIONS
     total: int
 
 
@@ -209,6 +241,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         blocks_data = []
         datasets = []
         outliers_data = []
+
         for block in blocks_history:
             if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
                 continue
@@ -239,7 +272,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             labels.append(str(block.block_number))
 
             # Populate risk_data for chart
-            risk_data.append(block.risk)
+            risk_data.append(block.risk*100.0)
 
             # Populate violations_data for chart
             violations_data.append(plagued_block.num_injections)
@@ -251,11 +284,12 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 fill=False,
                 order=1,
                 type="line",
-                label="Trust Score Line",
+                label="Trust Score (%)",
                 borderColor=TRUST_COLOR,
                 backgroundColor=TRUST_COLOR,
                 stack="risk_score",
                 data=risk_data,
+                yAxisID=TRUST_SCORE_Y_AXIS,
                 tension="0.5"
             )
         )
@@ -264,11 +298,12 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 fill=False,
                 order=2,
                 type="",
-                label="Violations",
+                label="Injections",
                 borderColor="#CD212A",
                 stack="violations",
                 backgroundColor="#CD212A",
                 data=violations_data,
+                yAxisID=VIOLATIONS_Y_AXIS,
                 tension=""
             )
         )
