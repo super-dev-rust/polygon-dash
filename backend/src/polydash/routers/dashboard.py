@@ -103,15 +103,15 @@ TRUST_COLOR = "#32a852"
 # },{
 
 class MinerChartDataset(BaseModel):
-    fill: bool
+    fill: bool = False
     order: int
-    type: str
+    type: Optional[str]
     label: str
     borderColor: str
     stack: str
     backgroundColor: str
-    data: List[float]
-    tension: str
+    data: List[float|None]
+    tension: Optional[str]
     yAxisID: str = TRUST_SCORE_Y_AXIS
 
 
@@ -229,7 +229,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         if MinerRisk.get(pubkey=address) is None:
             raise HTTPException(status_code=404, detail="Miner not found")
 
-        blocks_history = MinerRiskHistory.select().where(pubkey=address).order_by(MinerRiskHistory.block_number).limit(
+        blocks_history = MinerRiskHistory.select().order_by(MinerRiskHistory.block_number).limit(
             last_blocks)
         if not blocks_history:
             return MinerChartData(labels=[], datasets=[], blocks_data=[])
@@ -239,49 +239,25 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         risk_data = []
         violations_data = []
         blocks_data = []
-        datasets = []
         outliers_data = []
 
         for block in blocks_history:
             if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
                 continue
-            # TODO:there should be a function that parse violations string
-            violations = [
-                BlockViolationsData(
-                    type="injection",
-                    color="#D22B2B",
-                    amount=plagued_block.num_injections
-                ),
-                BlockViolationsData(
-                    type="outlier",
-                    color=OUTLIERS_COLOR,
-                    amount=plagued_block.num_outliers
-                )
-            ]
 
-            # Populate blocks data for now, maybe it will be used later
-            blocks_data.append(
-                MinerBlocksData(
-                    block_number=block.block_number,
-                    block_hash=plagued_block.hash,
-                    risk=block.risk,
-                    violations=violations
-                )
-            )
-            # Populate labels(block numbers as strings) for chart
+            # Populate labels(block numbers as strings) and data for chart
             labels.append(str(block.block_number))
+            if block.pubkey == address:
+                risk_data.append(block.risk * 100.0)
+                violations_data.append(plagued_block.num_injections)
+                outliers_data.append(plagued_block.num_outliers)
+            else:
+                risk_data.append(None)
+                violations_data.append(None)
+                outliers_data.append(None)
 
-            # Populate risk_data for chart
-            risk_data.append(block.risk*100.0)
-
-            # Populate violations_data for chart
-            violations_data.append(plagued_block.num_injections)
-
-            outliers_data.append(plagued_block.num_outliers)
-
-        datasets.append(
+        datasets = [
             MinerChartDataset(
-                fill=False,
                 order=1,
                 type="line",
                 label="Trust Score (%)",
@@ -291,38 +267,29 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 data=risk_data,
                 yAxisID=TRUST_SCORE_Y_AXIS,
                 tension="0.5"
-            )
-        )
-        datasets.append(
-            MinerChartDataset(
-                fill=False,
+            ), MinerChartDataset(
                 order=2,
-                type="",
                 label="Injections",
                 borderColor="#CD212A",
                 stack="violations",
                 backgroundColor="#CD212A",
                 data=violations_data,
                 yAxisID=VIOLATIONS_Y_AXIS,
-                tension=""
-            )
-        )
-
-        datasets.append(
-            MinerChartDataset(
-                fill=False,
+            ), MinerChartDataset(
                 order=3,
-                type="",
                 label="Outliers (suspected injections)",
                 borderColor=OUTLIERS_COLOR,
                 stack="violations",
                 backgroundColor=OUTLIERS_COLOR,
                 data=outliers_data,
-                tension=""
-            )
-        )
+                yAxisID=VIOLATIONS_Y_AXIS,
+            )]
 
-        return MinerChartData(labels=labels, datasets=datasets, blocks_data=blocks_data, total=len(blocks_data))
+        return MinerChartData(
+            labels=labels,
+            datasets=datasets,
+            blocks_data=blocks_data,
+            total=len(blocks_data))
 
 
 @router.get("/trust-distribution")
