@@ -210,7 +210,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         datasets = []
         outliers_data = []
         for block in blocks_history:
-            if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
+            if (plagued_block := BlockDelta.get(block_number=block.number)) is None:
                 continue
             # TODO:there should be a function that parse violations string
             violations = [
@@ -229,14 +229,14 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             # Populate blocks data for now, maybe it will be used later
             blocks_data.append(
                 MinerBlocksData(
-                    block_number=block.block_number,
+                    block_number=block.number,
                     block_hash=plagued_block.hash,
                     risk=block.risk,
                     violations=violations
                 )
             )
             # Populate labels(block numbers as strings) for chart
-            labels.append(str(block.block_number))
+            labels.append(str(block.number))
 
             # Populate risk_data for chart
             risk_data.append(block.risk)

@@ -14,7 +14,7 @@ from polydash.rating.live_time_heuristic import EventQueue
 from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 from polydash.deanonymize.deanonymizer import DeanonymizerQueue
 from polydash.settings import BlockRetrieverSettings
-from polydash.rating.live_rating import TransactionEventQueue
+from polydash.rating.polygon_live_rating import TransactionEventQueue
 from polydash.w3router_watcher.w3router_watcher import W3RouterEventQueue
 
 alchemy_token = ""

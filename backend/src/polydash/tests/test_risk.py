@@ -3,7 +3,6 @@ import string
 
 import pytest
 from pony.orm import db_session
-from tdigest import TDigest
 
 from polydash.db import db
 from polydash.model.block import Block
@@ -11,7 +10,7 @@ from polydash.model.node_risk import NodeStats, BlockDelta
 from polydash.model.risk import MinerRisk
 from polydash.model.transaction import Transaction
 from polydash.model.transaction_p2p import TransactionP2P
-from polydash.rating.live_rating import process_block
+from polydash.rating.polygon_live_rating import PolygonRatingProcessor
 
 
 @pytest.fixture
@@ -22,16 +21,15 @@ def mock_db():
 
 def test_process_block(mock_db):
     with (db_session):
-        block_ts = 100 * 1000
+        block_ts = 100
         miner_id = "miner1"
         block_hash = "abc"
-
-        digest = TDigest()
 
         block = Block(number=1,
                       hash=block_hash,
                       validated_by=miner_id,
                       timestamp=block_ts)
+        block_ts *= 1000
         for i in range(100):
             # generate random string of 10 chars
             tx_hash = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
@@ -67,12 +65,12 @@ def test_process_block(mock_db):
                                tx_first_seen=block_ts + delta)
             elif i == 99:
                 # Transaction with big negative delta
-                delta = random.randint(10000, 20000)
+                delta = random.randint(10001, 20000)
                 TransactionP2P(tx_hash=tx_hash,
                                peer_id=peer_id,
                                tx_first_seen=block_ts + delta)
         assert block.transactions.count() == 100
-        process_block(block, digest)
+        PolygonRatingProcessor().process_block(block)
 
         block_delta = BlockDelta.get(block_number=1)
         node_stats = NodeStats.get(pubkey=miner_id)
@@ -85,35 +83,23 @@ def test_process_block(mock_db):
         assert node_stats.num_outliers <= 6
 
         assert risk_data.numblocks == 1
-        assert risk_data.risk == 1.0 * (0.8 * (1 - 3 / 100)
-                                        + 0.2 * (1 - node_stats.num_outliers / 100))
+        assert round(risk_data.risk, 2) == 0.76
 
 
 def test_get_new_risk(mock_db):
     with db_session:
-        MinerRisk.add_datapoint_new("abc", 0.9, 1, 1, 10, 1)
-        MinerRisk.add_datapoint_new("abc", 0.9, 1, 1, 10, 2)
-        MinerRisk.add_datapoint_new("abc", 0.9, 1, 1, 10, 3)
-        MinerRisk.add_datapoint_new("abc", 0.9, 1, 1, 10, 4)
-        MinerRisk.add_datapoint_new("ebf", 1.0, 1, 1, 2, 5)
-        MinerRisk.add_datapoint_new("ebf", 1.0, 1, 1, 2, 6)
+        MinerRisk.add_datapoint_new("abc", 0.9, 1)
+        MinerRisk.add_datapoint_new("abc", 0.9, 2)
+        MinerRisk.add_datapoint_new("abc", 0.9, 3)
+        MinerRisk.add_datapoint_new("abc", 0.9, 4)
+        MinerRisk.add_datapoint_new("ebf", 1.0, 5)
+        MinerRisk.add_datapoint_new("ebf", 1.0, 6)
 
         assert len(MinerRisk.select()[:]) == 2
         assert MinerRisk.select()[:][0].pubkey == "abc"
-        assert round(MinerRisk.select()[:][0].risk, 2) == 0.81
+        assert round(MinerRisk.select()[:][0].risk, 2) == 0.9
         assert MinerRisk.select()[:][0].numblocks == 4
 
         assert MinerRisk.select()[:][1].pubkey == "ebf"
-        assert round(MinerRisk.select()[:][1].risk, 2) == 0.5
+        assert round(MinerRisk.select()[:][1].risk, 2) == 1.0
         assert MinerRisk.select()[:][1].numblocks == 2
-
-
-def test_get_latest_risk(mock_db):
-    with db_session:
-        MinerRisk.add_datapoint("abc", 20)
-        MinerRisk.add_datapoint("abc", 20)
-        MinerRisk.add_datapoint("abc", 20)
-        MinerRisk.add_datapoint("abc", 20)
-        MinerRisk.add_datapoint("ebf", 30)
-        MinerRisk.add_datapoint("ebf", 30)
-        print(MinerRisk.select()[:])
