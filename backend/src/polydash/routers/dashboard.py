@@ -23,7 +23,7 @@ CHARTJS_OPTIONS = {
         },
         VIOLATIONS_Y_AXIS: {
             "ticks": {"beginAtZero": True, "color": "red"},
-            "type": 'linear',
+            "type": 'logarithmic',
             "grid": {"display": False},
             "position": 'right'
         },
@@ -73,6 +73,12 @@ class MinerDisplayData(BaseModel):
     name: str
     blocks_created: float
     violations: List[ViolationDisplayData]
+
+
+class MinerBlocksData(BaseModel):
+    block_number: int
+    block_hash: str
+    risk: float
 
 
 OUTLIERS_COLOR = "#FFA450"
@@ -205,7 +211,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         if MinerRisk.get(pubkey=address) is None:
             raise HTTPException(status_code=404, detail="Miner not found")
 
-        blocks_history = MinerRiskHistory.select().order_by(MinerRiskHistory.block_number).limit(
+        blocks_history = MinerRiskHistory.select().where(pubkey=address).order_by(MinerRiskHistory.block_number).limit(
             last_blocks)
         if not blocks_history:
             return MinerChartData(labels=[], datasets=[], blocks_data=[])
@@ -215,21 +221,38 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         risk_data = []
         violations_data = []
         outliers_data = []
+        blocks_data = []
+        skipped_blocks_data = []
 
         for block in blocks_history:
             if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
                 continue
 
-            # Populate labels(block numbers as strings) for chart
-            labels.append(str(block.block_number))
-            if block.pubkey == address:
-                risk_data.append(block.risk * 100.0)
-                violations_data.append(plagued_block.num_injections)
-                outliers_data.append(plagued_block.num_outliers)
-            else:
+            if (blocks_data and
+                    (blocks_delta := (block.block_number - blocks_data[-1].block_number)) > 1):
+                # This miner skipped some blocks, so insert and additional datapoint
+                # in the chart to indicate it
+                skipped_blocks_data.append(blocks_delta)
+                labels.append(f"skipped blocks")
                 risk_data.append(None)
                 violations_data.append(None)
                 outliers_data.append(None)
+
+            # Populate blocks data for now, maybe it will be used later
+            blocks_data.append(
+                MinerBlocksData(
+                    block_number=block.block_number,
+                    block_hash=plagued_block.hash,
+                    risk=block.risk,
+                )
+            )
+
+            # Populate labels(block numbers as strings) for chart
+            labels.append(str(block.block_number))
+            skipped_blocks_data.append(None)
+            risk_data.append(block.risk * 100.0)
+            violations_data.append(plagued_block.num_injections)
+            outliers_data.append(plagued_block.num_outliers)
 
         datasets = [
             MinerChartDataset(
@@ -258,7 +281,15 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 backgroundColor=OUTLIERS_COLOR,
                 data=outliers_data,
                 yAxisID=VIOLATIONS_Y_AXIS,
-            )]
+            ), MinerChartDataset(
+                order=4,
+                label="Skipped blocks",
+                borderColor="#000000",
+                stack="skipped_blocks",
+                backgroundColor="#000000",
+                data=skipped_blocks_data,
+                yAxisID=VIOLATIONS_Y_AXIS,
+            ),]
 
         return MinerChartData(
             labels=labels,
