@@ -6,12 +6,13 @@ from pony.orm import db_session, desc
 from pydantic import BaseModel, Json
 
 from polydash.log import LOGGER
+from polydash.model.block import Block
 from polydash.model.node_risk import BlockDelta
 from polydash.model.risk import MinerRisk, MinerRiskHistory
-from polydash.model.plagued_node import PlaguedBlock
 
 TRUST_SCORE_Y_AXIS = "percentage"
 VIOLATIONS_Y_AXIS = "num_violations"
+BIN_SIZE = 1
 
 CHARTJS_OPTIONS = {
     "scales": {
@@ -224,6 +225,11 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         blocks_data = []
         skipped_blocks_data = []
 
+        data_bin = []
+        violations_sum = 0
+        outliers_sum = 0
+        transactions_sum = 0
+        num_blocks_added = 0
         for block in blocks_history:
             if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
                 continue
@@ -247,12 +253,22 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 )
             )
 
-            # Populate labels(block numbers as strings) for chart
-            labels.append(str(block.block_number))
-            skipped_blocks_data.append(None)
-            risk_data.append(block.risk * 100.0)
-            violations_data.append(plagued_block.num_injections)
-            outliers_data.append(plagued_block.num_outliers)
+            num_blocks_added += 1
+            violations_sum += plagued_block.num_injections
+            outliers_sum += plagued_block.num_outliers
+            transactions_sum += Block.get(number=block.block_number).transactions.count()
+            if num_blocks_added == BIN_SIZE:
+                # Populate labels(block numbers as strings) for chart
+                labels.append(str(block.block_number))
+                skipped_blocks_data.append(None)
+                risk_data.append(100.0 * block.risk)
+                violations_data.append(((100.0 * violations_sum)/transactions_sum) if transactions_sum else None)
+                outliers_data.append(((100.0 * outliers_sum)/transactions_sum) if transactions_sum else None)
+                print (violations_sum, transactions_sum)
+                num_blocks_added = 0
+                violations_sum = 0
+                outliers_sum = 0
+                transactions_sum = 0
 
         datasets = [
             MinerChartDataset(
@@ -272,7 +288,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 stack="violations",
                 backgroundColor="#CD212A",
                 data=violations_data,
-                yAxisID=VIOLATIONS_Y_AXIS,
+                yAxisID=TRUST_SCORE_Y_AXIS,
             ), MinerChartDataset(
                 order=3,
                 label="Outliers (suspected injections)",
@@ -280,7 +296,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 stack="violations",
                 backgroundColor=OUTLIERS_COLOR,
                 data=outliers_data,
-                yAxisID=VIOLATIONS_Y_AXIS,
+                yAxisID=TRUST_SCORE_Y_AXIS,
             ), MinerChartDataset(
                 order=4,
                 label="Skipped blocks",
@@ -289,7 +305,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 backgroundColor="#000000",
                 data=skipped_blocks_data,
                 yAxisID=VIOLATIONS_Y_AXIS,
-            ),]
+            ), ]
 
         return MinerChartData(
             labels=labels,
