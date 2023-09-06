@@ -56,6 +56,7 @@ class W3RouterWatcher:
         global TOP_NODES_LIST_SIZE
 
         new_top_nodes = {}
+        memorized_peer_ids = set()
         top_nodes_select_offset = 0
         current_priority = 1
 
@@ -76,25 +77,33 @@ class W3RouterWatcher:
 
             # build a new list, including the IP addresses
             for node in new_top_nodes_from_db:
-                # try to get peer ID of the node using two tables
-                deanoned_node = (
+                # try to get possible peer IDs of the node using two tables
+                deanoned_nodes = (
                     DeanonNodeByBlock.select(signer_key=node.pubkey)
                     .order_by(orm.desc(DeanonNodeByBlock.confidence))
-                    .limit(1)
                 )
-                if len(deanoned_node) == 0:
-                    deanoned_node = (
+                if len(deanoned_nodes) == 0:
+                    deanoned_nodes = (
                         DeanonNodeByTx.select(signer_key=node.pubkey)
                         .order_by(orm.desc(DeanonNodeByTx.confidence))
-                        .limit(1)
                     )
-                if len(deanoned_node) == 0:
+                if len(deanoned_nodes) == 0:
                     # we don't know peer ID of this node, moving on
+                    continue
+
+                # try to get the peer ID of this node which we don't know yet
+                final_deanoned_node = None
+                for deanoned_node in deanoned_nodes:
+                    if deanoned_node.peer_id not in memorized_peer_ids:
+                        final_deanoned_node = deanoned_node
+                        memorized_peer_ids.add(final_deanoned_node.peer_id)
+                        break
+                if final_deanoned_node is None:
                     continue
 
                 # now, try to get IP address of that node
                 node_ip = (
-                    PeerToIP.select(peer_id=deanoned_node[0].peer_id)
+                    PeerToIP.select(peer_id=final_deanoned_node.peer_id)
                     .order_by(orm.desc(PeerToIP.id))
                     .limit(1)
                 )
