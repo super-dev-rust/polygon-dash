@@ -3,13 +3,12 @@ import time
 import traceback
 
 import requests
-from pony import orm
+from pony.orm import db_session
 
 from polydash.log import LOGGER
 from polydash.model.cardano import CardanoBlock, CardanoTransaction
 from polydash.rating.cardano_live_rating import CardanoBlockEventQueue
 from polydash.settings import CardanoRetrieverSettings
-
 
 from datetime import datetime, timezone
 
@@ -44,8 +43,13 @@ class CardanoRetriever:
             self.settings = CardanoRetrieverSettings()
         self.__logger = LOGGER.getChild(self.__class__.__name__)
         self.base_url = self.settings.mempool_rpc_url
+        self.failure_count = 0
+        self.next_block_number = 9118742
+        self.start_time = "2023-08-05T00:20:00.000Z"
+        self.failure_count = 0
+        self.limit = 1000
 
-    def get_transaction_list(self, pool=None, from_datetime=None, limit=None):
+    def get_transactions(self, pool=None, from_datetime=None, limit=None):
         """
         Fetches a list of transactions from the given API endpoint.
 
@@ -83,97 +87,81 @@ class CardanoRetriever:
             )
             return None
 
-        json_response = json.loads(response.text)
-        if json_response is None:
+        if json.loads(response.text) is None:
             self.__logger.error("could not make a request: json_response is None")
             return None
         return response.json()
 
-    def parse_json_transaction(self, json_tx):
-        return (
-            json_tx["tx_hash"],
-            json_tx["block_time"],
-            json_tx["block_hash"],
-            json_tx.get('arrival_time', None),
-            json_tx['pool_id'],
-            json_tx["block_no"],
+    @db_session
+    def __process_single_transaction_entry(self, json_tx):
+        tx_hash = json_tx["tx_hash"]
+        block_time = json_tx["block_time"]
+        block_hash = json_tx["block_hash"]
+        arrival_time = json_tx.get('arrival_time', None)
+        block_creator = json_tx['pool_id']
+        block_number = json_tx["block_no"]
+
+        if block := CardanoBlock.get(block_number=block_number) is None:
+            block = CardanoBlock(
+                block_number=block_number,
+                block_hash=block_hash,
+                block_creator=block_creator,
+                timestamp=datetime_string_to_timestamp(block_time),
+            )
+            self.__logger.debug(
+                "retrieved and saved into DB block with number {} and hash {}".format(
+                    block_number, block_hash
+                )
+            )
+            CardanoBlockEventQueue.put(self.next_block_number)
+
+        tx = CardanoTransaction.get(tx_hash=tx_hash) or CardanoTransaction(
+            hash=tx_hash,
+            first_seen_ts=datetime_string_to_timestamp(block_time),
+            # If we never saw the transaction in mempool, emulate an injection
+            finalized_ts=datetime_string_to_timestamp(arrival_time or (block_time + 100000))
         )
+        block.transactions.add(tx)
+        self.__logger.debug(
+            "retrieved and saved into DB transaction with hash {}, block {}".format(tx.hash, block.block_hash)
+        )
+        self.start_time = arrival_time
+        self.next_block_number = block.block_number + 1
 
-    def retriever_thread(self):
+    def __fetch_and_process_transactions(self):
+        # first, retrieve the block
+        if (json_txs_list := self.get_transactions(from_datetime=self.start_time, limit=self.limit)) is None:
+            self.failure_count += 1
+            return
+
+        for json_tx in json_txs_list:
+            self.__process_single_transaction_entry(json_tx)
+
+        # If we received the maximum amount of transactions
+        # we requested in the batch,
+        # there is a good chance we're behind the server
+        # and can proceed to fetching the next batch immediately
+        return len(json_txs_list) == self.limit
+
+    def retriever_loop(self):
         self.__logger.info("block retrieved thread has started")
-
-        start_time = "2023-08-05T00:20:00.000Z"
-        limit = 1000
-        next_block_number = 9118742
-
-        failure_count = 0
-        block_transactions = []
-
+        retrieve_next_batch_immediately = False
         while True:
-            if failure_count > 3:
+            if self.failure_count > 3:
                 self.__logger.error(
                     "giving up trying to retrieve block {}, moving to the next one...".format(
-                        next_block_number
+                        self.next_block_number
                     )
                 )
-                failure_count = 0
-                next_block_number += 1
+                self.failure_count = 0
+                self.next_block_number += 1
 
             try:
-                # first, retrieve the block
-                tx_list = self.get_transaction_list(from_datetime=start_time, limit=limit)
-                if tx_list is None:
-                    failure_count += 1
-                    continue
-
-                for tx in tx_list:
-                    (tx_hash,
-                     block_time, block_hash,
-                     arrival_time, block_creator,
-                     block_number) = self.parse_json_transaction(tx)
-
-                    if block_number != next_block_number:
-                        # We start a new block, create one
-                        with orm.db_session:
-                            if CardanoBlock.get(block_number=block_number) is None:
-                                block = CardanoBlock(
-                                    block_number=block_number,
-                                    block_hash=block_hash,
-                                    block_creator=block_creator,
-                                    timestamp=datetime_string_to_timestamp(block_time),
-                                )
-                                for t in block_transactions:
-                                    block.transactions.add(t)
-                                orm.commit()
-
-                                CardanoBlockEventQueue.put(block_number)
-                                self.__logger.debug(
-                                    "retrieved and saved into DB block with number {} and hash {}".format(
-                                        block_number, block_hash
-                                    )
-                                )
-
-                        start_time = arrival_time
-                        next_block_number += 1
-                        block_transactions = []
-                    else:
-                        # We continue with the same block, add transactions
-                        with orm.db_session:
-                            if CardanoTransaction.get(hash=tx_hash) is None:
-                                if arrival_time is None:
-                                    # We never saw the transaction in mempool, so emulate an injection
-                                    arrival_time = datetime_string_to_timestamp(block_time + 100000)
-                                else:
-                                    arrival_time = datetime_string_to_timestamp(arrival_time)
-                                tx = CardanoTransaction(
-                                    hash=tx_hash,
-                                    first_seen_ts=datetime_string_to_timestamp(block_time),
-                                    finalized_ts=arrival_time,
-                                )
-                                block_transactions.append(tx)
+                retrieve_next_batch_immediately = self.__fetch_and_process_transactions()
             except Exception as e:
-                failure_count += 1
+                self.failure_count += 1
                 # TODO: instead redo the logger to save tracebacks
                 traceback.print_exc()
                 self.__logger.error("exception when retrieving block happened: {}".format(e))
-            time.sleep(20)
+            if not retrieve_next_batch_immediately:
+                time.sleep(20)

@@ -25,9 +25,9 @@ class CardanoRatingProcessor:
                             ):
         is_inject = InjectionDetector.is_transaction_injection(tx.finalized_ts, tx.first_seen_ts)
         if is_inject:
+            tx_risk = RiskType.RISK_INJECTION
             block_author.num_injections += 1
             block_delta.num_injections += 1
-            tx_risk = RiskType.RISK_INJECTION
         else:
             tx_risk = self.outlier_detector.assess_transaction_risk(tx.finalized_ts, tx.first_seen_ts)
             if tx_risk == RiskType.RISK_TOO_FAST:
