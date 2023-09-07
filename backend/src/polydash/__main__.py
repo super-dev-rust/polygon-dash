@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from polydash.rating.cardano_live_rating import start_live_time_cardano_rating
 from polydash.settings import PolydashSettings
-from polydash.routers import node, block, dashboard, deanon, transaction_risk
+from polydash.routers import block, dashboard, deanon, transaction_risk
 from polydash.db import start_db
 from polydash.block_retriever.retriever import BlockRetriever
 from polydash.rating.polygon_live_rating import start_live_time_polygon_rating
@@ -16,7 +16,6 @@ from polydash.w3router_watcher.w3router_watcher import W3RouterWatcher
 
 # FastAPI set up
 app = FastAPI()
-app.include_router(node.router)
 app.include_router(block.router)
 app.include_router(dashboard.router)
 app.include_router(deanon.router)
@@ -36,7 +35,7 @@ app.add_middleware(
               required=False,
               type=click.Path(exists=True),
               help='Path to the settings file (e.g. settings.yaml)')
-def start(settings) -> PolydashSettings:
+def start(settings):
     if settings is None:
         s = PolydashSettings()
     else:
@@ -60,4 +59,4 @@ async def root():
 
 if __name__ == "__main__":
     # Modules set up
-    settings = start()
+    start()

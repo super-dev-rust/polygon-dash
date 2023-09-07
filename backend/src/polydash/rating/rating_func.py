@@ -1,7 +1,5 @@
 import math
 
-from pony.orm import select
-
 
 def activity_coef(num_txs, max_txs) -> float:
     c = num_txs / max_txs

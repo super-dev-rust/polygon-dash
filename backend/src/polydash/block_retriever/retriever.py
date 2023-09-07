@@ -10,8 +10,6 @@ from pony.orm import desc
 from polydash.log import LOGGER
 from polydash.model.block import Block
 from polydash.model.transaction import Transaction
-from polydash.rating.live_time_heuristic import EventQueue
-from polydash.rating.live_time_heuristic_a import BlockPoolHeuristicQueue
 from polydash.deanonymize.deanonymizer import DeanonymizerQueue
 from polydash.settings import BlockRetrieverSettings
 from polydash.rating.polygon_live_rating import TransactionEventQueue
@@ -161,17 +159,6 @@ class BlockRetriever:
                             if db_tx not in block.transactions:
                                 block.transactions.add(db_tx)
                         orm.commit()
-                        EventQueue.put(block_number)  # put the block for the heuristics to be updated
-                        BlockPoolHeuristicQueue.put(
-                            (
-                                block_number,
-                                block_ts,
-                                block_hash,
-                                block_txs_d,
-                                base_fee,
-                                fetched_block_author,
-                            )
-                        )  # put the block data to the Heuristic A Queue
                         DeanonymizerQueue.put(
                             block_number
                         )  # put the block for the deanon process to work

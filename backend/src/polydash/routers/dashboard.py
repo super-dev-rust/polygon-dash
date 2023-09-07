@@ -8,7 +8,6 @@ from pydantic import BaseModel
 from polydash.log import LOGGER
 from polydash.model.node_risk import BlockDelta
 from polydash.model.risk import MinerRisk, MinerRiskHistory
-from polydash.model.plagued_node import PlaguedBlock
 
 router = APIRouter(
     prefix="/dash",

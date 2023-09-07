@@ -8,6 +8,7 @@ class CardanoTransaction(db.Entity):
     hash = orm.PrimaryKey(str)
     first_seen_ts = orm.Required(int, size=64)
     finalized_ts = orm.Required(int, size=64)
+    block = orm.Required("CardanoBlock")
 
 
 class CardanoTransactionRisk(db.Entity):
