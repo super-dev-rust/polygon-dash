@@ -1,11 +1,45 @@
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pony.orm import db_session, desc
-from pydantic import BaseModel
+from pydantic import BaseModel, Json
 
 from polydash.log import LOGGER
+from polydash.model.block import Block
+from polydash.model.node_risk import BlockDelta
+from polydash.model.risk import MinerRisk, MinerRiskHistory
+
+TRUST_SCORE_Y_AXIS = "percentage"
+VIOLATIONS_Y_AXIS = "num_violations"
+BIN_SIZE = 1
+
+CHARTJS_OPTIONS = {
+    "scales": {
+        TRUST_SCORE_Y_AXIS: {
+            "max": 100,
+            "min": 0,
+            "type": 'linear',
+            "position": 'left'
+        },
+        VIOLATIONS_Y_AXIS: {
+            "ticks": {"beginAtZero": True, "color": "red"},
+            "type": 'logarithmic',
+            "grid": {"display": False},
+            "position": 'right'
+        },
+        "x": {
+            "beginAtZero": True,
+            "stacked": True
+        }
+    },
+    "responsive": True,
+    "legend": {
+        "labels": {
+            "fontColor": 'red',
+        }
+    }
+}
 from polydash.miners_ratings.model import BlockDelta, MinerRisk, MinerRiskHistory
 
 dashboard_router = router = APIRouter(
@@ -43,17 +77,10 @@ class MinerDisplayData(BaseModel):
     violations: List[ViolationDisplayData]
 
 
-class BlockViolationsData(BaseModel):
-    type: str
-    color: str  # #D22B2B for injection, #D2B22B for censoring, #2BD22B for reordering
-    amount: int  # 1 for now
-
-
 class MinerBlocksData(BaseModel):
     block_number: int
     block_hash: str
     risk: float
-    violations: List[BlockViolationsData]
 
 
 OUTLIERS_COLOR = "#FFA450"
@@ -61,21 +88,22 @@ TRUST_COLOR = "#32a852"
 
 
 class MinerChartDataset(BaseModel):
-    fill: bool
+    fill: bool = False
     order: int
-    type: str
+    type: Optional[str]
     label: str
     borderColor: str
     stack: str
     backgroundColor: str
-    data: List[float]
-    tension: str
+    data: List[float | None]
+    tension: Optional[str]
+    yAxisID: str = TRUST_SCORE_Y_AXIS
 
 
 class MinerChartData(BaseModel):
     labels: List[str]
     datasets: List[MinerChartDataset]
-    blocks_data: List[MinerBlocksData]
+    options: Optional[dict] = CHARTJS_OPTIONS
     total: int
 
 
@@ -194,25 +222,28 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         labels = []
         risk_data = []
         violations_data = []
-        blocks_data = []
-        datasets = []
         outliers_data = []
+        blocks_data = []
+        skipped_blocks_data = []
+
+        data_bin = []
+        violations_sum = 0
+        outliers_sum = 0
+        transactions_sum = 0
+        num_blocks_added = 0
         for block in blocks_history:
             if (plagued_block := BlockDelta.get(block_number=block.number)) is None:
                 continue
-            # TODO:there should be a function that parse violations string
-            violations = [
-                BlockViolationsData(
-                    type="injection",
-                    color="#D22B2B",
-                    amount=plagued_block.num_injections
-                ),
-                BlockViolationsData(
-                    type="outlier",
-                    color=OUTLIERS_COLOR,
-                    amount=plagued_block.num_outliers
-                )
-            ]
+
+            if (blocks_data and
+                    (blocks_delta := (block.block_number - blocks_data[-1].block_number)) > 1):
+                # This miner skipped some blocks, so insert and additional datapoint
+                # in the chart to indicate it
+                skipped_blocks_data.append(blocks_delta)
+                labels.append(f"skipped blocks")
+                risk_data.append(None)
+                violations_data.append(None)
+                outliers_data.append(None)
 
             # Populate blocks data for now, maybe it will be used later
             blocks_data.append(
@@ -220,62 +251,67 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                     block_number=block.number,
                     block_hash=plagued_block.hash,
                     risk=block.risk,
-                    violations=violations
                 )
             )
-            # Populate labels(block numbers as strings) for chart
-            labels.append(str(block.number))
 
-            # Populate risk_data for chart
-            risk_data.append(block.risk)
+            num_blocks_added += 1
+            violations_sum += plagued_block.num_injections
+            outliers_sum += plagued_block.num_outliers
+            transactions_sum += Block.get(number=block.block_number).transactions.count()
+            if num_blocks_added == BIN_SIZE:
+                # Populate labels(block numbers as strings) for chart
+                labels.append(str(block.number))
+                skipped_blocks_data.append(None)
+                risk_data.append(100.0 * block.risk)
+                violations_data.append(((100.0 * violations_sum)/transactions_sum) if transactions_sum else None)
+                outliers_data.append(((100.0 * outliers_sum)/transactions_sum) if transactions_sum else None)
+                print (violations_sum, transactions_sum)
+                num_blocks_added = 0
+                violations_sum = 0
+                outliers_sum = 0
+                transactions_sum = 0
 
-            # Populate violations_data for chart
-            violations_data.append(plagued_block.num_injections)
-
-            outliers_data.append(plagued_block.num_outliers)
-
-        datasets.append(
+        datasets = [
             MinerChartDataset(
-                fill=False,
                 order=1,
                 type="line",
-                label="Trust Score Line",
+                label="Trust Score (%)",
                 borderColor=TRUST_COLOR,
                 backgroundColor=TRUST_COLOR,
                 stack="risk_score",
                 data=risk_data,
+                yAxisID=TRUST_SCORE_Y_AXIS,
                 tension="0.5"
-            )
-        )
-        datasets.append(
-            MinerChartDataset(
-                fill=False,
+            ), MinerChartDataset(
                 order=2,
-                type="",
-                label="Violations",
+                label="Injections",
                 borderColor="#CD212A",
                 stack="violations",
                 backgroundColor="#CD212A",
                 data=violations_data,
-                tension=""
-            )
-        )
-
-        datasets.append(
-            MinerChartDataset(
-                fill=False,
+                yAxisID=TRUST_SCORE_Y_AXIS,
+            ), MinerChartDataset(
                 order=3,
-                type="",
                 label="Outliers (suspected injections)",
                 borderColor=OUTLIERS_COLOR,
                 stack="violations",
                 backgroundColor=OUTLIERS_COLOR,
                 data=outliers_data,
-                tension=""
-            )
-        )
+                yAxisID=TRUST_SCORE_Y_AXIS,
+            ), MinerChartDataset(
+                order=4,
+                label="Skipped blocks",
+                borderColor="#000000",
+                stack="skipped_blocks",
+                backgroundColor="#000000",
+                data=skipped_blocks_data,
+                yAxisID=VIOLATIONS_Y_AXIS,
+            ), ]
 
-        return MinerChartData(labels=labels, datasets=datasets, blocks_data=blocks_data, total=len(blocks_data))
+        return MinerChartData(
+            labels=labels,
+            datasets=datasets,
+            total=len(labels))
 
 
 @router.get("/trust-distribution")

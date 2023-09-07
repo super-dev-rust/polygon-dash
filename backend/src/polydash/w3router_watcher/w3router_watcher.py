@@ -125,6 +125,10 @@ class W3RouterWatcher:
                 # get the block from some other thread; we're not really going to use the block number (at least for now),
                 # but we want to receive the notification itself
                 _ = W3RouterEventQueue.get()
+                # Empty the queue in case there were too many messages to process
+                # We are only interested in a single event
+                while W3RouterEventQueue.not_empty:
+                    W3RouterEventQueue.get_nowait()
                 self.check_top_nodes()
             except Exception as e:
                 traceback.print_exc()

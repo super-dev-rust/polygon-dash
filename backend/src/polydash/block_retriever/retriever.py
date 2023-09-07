@@ -165,9 +165,11 @@ class BlockRetriever:
                         TransactionEventQueue.put(
                             block_number
                         )  # put the block for the Transaction Risks to work
-                        W3RouterEventQueue.put(
-                            block_number
-                        )  # put the block for W3Router Watcher to work
+
+                        if not W3RouterEventQueue.full():
+                            W3RouterEventQueue.put(
+                                block_number
+                            )  # put the block to trigger W3Router Watcher
                         self.__logger.debug(
                             "retrieved and saved into DB block with number {} and hash {}".format(
                                 block_number, block_hash
