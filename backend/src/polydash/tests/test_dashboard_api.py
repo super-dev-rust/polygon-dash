@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from polydash.db import db
-from polydash.model.risk import MinerRisk
-from polydash.routers.dashboard import router
+from polydash.miners_ratings.model import MinerRisk
+from polydash.routes.routers import router
 
 VIOLATIONS = ("injections", "censoring", "reordering", "")
 

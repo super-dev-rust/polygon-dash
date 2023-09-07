@@ -4,12 +4,11 @@ import traceback
 import requests
 
 from pony import orm
+from pony.orm import db_session
 
-from polydash.log import LOGGER
-from polydash.model.risk import MinerRisk
-from polydash.model.deanon_node_by_tx import DeanonNodeByTx
-from polydash.model.deanon_node_by_block import DeanonNodeByBlock
-from polydash.model.peer_to_ip import PeerToIP
+from common.log import LOGGER
+from polydash.miners_ratings.model import MinerRisk
+from polydash.deanon.model import DeanonNodeByTx, DeanonNodeByBlock, PeerToIP
 from polydash.settings import W3RouterSettings
 
 W3RouterEventQueue = queue.Queue()
@@ -52,6 +51,7 @@ class W3RouterWatcher:
             return True
         return False
 
+    @db_session
     def check_top_nodes(self):
         global TOP_NODES_LIST_SIZE
 
@@ -125,8 +125,7 @@ class W3RouterWatcher:
                 # get the block from some other thread; we're not really going to use the block number (at least for now),
                 # but we want to receive the notification itself
                 _ = W3RouterEventQueue.get()
-                with orm.db_session:
-                    self.check_top_nodes()
+                self.check_top_nodes()
             except Exception as e:
                 traceback.print_exc()
                 LOGGER.error(

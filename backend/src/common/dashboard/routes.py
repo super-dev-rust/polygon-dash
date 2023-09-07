@@ -6,10 +6,9 @@ from pony.orm import db_session, desc
 from pydantic import BaseModel
 
 from polydash.log import LOGGER
-from polydash.model.node_risk import BlockDelta
-from polydash.model.risk import MinerRisk, MinerRiskHistory
+from polydash.miners_ratings.model import BlockDelta, MinerRisk, MinerRiskHistory
 
-router = APIRouter(
+dashboard_router = router = APIRouter(
     prefix="/dash",
     tags=["dashboard"],
     responses={404: {"description": "Not found"}},
@@ -60,16 +59,6 @@ class MinerBlocksData(BaseModel):
 OUTLIERS_COLOR = "#FFA450"
 TRUST_COLOR = "#32a852"
 
-
-# {label: [ListOfBlockNumbers], datasets: [{
-#     label: "RiskScore",
-#     backgroundColor: "#BEBEBE",
-#     borderColor: "#BEBEBE",
-#     stack: "combined",
-#     fill: false,
-#     order: 0,
-#     data: [ListOfRiskScores]
-# },{
 
 class MinerChartDataset(BaseModel):
     fill: bool

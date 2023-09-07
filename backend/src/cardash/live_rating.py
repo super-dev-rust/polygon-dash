@@ -6,11 +6,11 @@ from pony import orm
 from pony.orm import select
 
 from polydash.log import LOGGER
-from polydash.model.cardano import CardanoTransactionRisk, CardanoBlock, CardanoBlockDelta, CardanoMinerStats, \
+from polydash.p2p_data.cardano import CardanoTransactionRisk, CardanoBlock, CardanoBlockDelta, CardanoMinerStats, \
     CardanoMinerRisk, CardanoTransaction
-from polydash.rating.injections import InjectionDetector
-from polydash.rating.outliers import OutlierDetector, RiskType
-from polydash.rating.rating_func import activity_coef, trust_score
+from polydash.miners_ratings.injections import InjectionDetector
+from polydash.miners_ratings.outliers import OutlierDetector, RiskType
+from polydash.miners_ratings.rating_func import activity_coef, trust_score
 
 
 class CardanoRatingProcessor:

@@ -6,8 +6,8 @@ import requests
 from pony.orm import db_session
 
 from polydash.log import LOGGER
-from polydash.model.cardano import CardanoBlock, CardanoTransaction
-from polydash.rating.cardano_live_rating import CardanoBlockEventQueue
+from polydash.p2p_data.cardano import CardanoBlock, CardanoTransaction
+from polydash.miners_ratings.cardano_live_rating import CardanoBlockEventQueue
 from polydash.settings import CardanoRetrieverSettings
 
 from datetime import datetime, timezone

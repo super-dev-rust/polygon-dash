@@ -4,15 +4,12 @@ import traceback
 
 from pony import orm
 
-from polydash.log import LOGGER
-from polydash.model.block_p2p import BlockP2P
-from polydash.model.transaction_p2p import TransactionP2P
-from polydash.model.deanon_node_by_tx import DeanonNodeByTx
-from polydash.model.deanon_node_by_block import DeanonNodeByBlock
-from polydash.model.peer_to_ip import PeerToIP
-from polydash.model.block import Block
+from common.log import LOGGER
+from polydash.block_retriever.model import Block
+from polydash.deanon.model import DeanonNodeByBlock, PeerToIP, DeanonNodeByTx
+from polydash.p2p_data.model import TransactionP2P, BlockP2P
 
-DeanonymizerQueue = queue.Queue()
+DeanonQueue = queue.Queue()
 
 
 @orm.db_session
@@ -27,12 +24,15 @@ def calculate_confidence_by_block(block):
 
     # if no such node is remembered by us yet, create it
     deanon_node = DeanonNodeByBlock.get_or_insert(
-        signer_key=block.validated_by, peer_id=block_from_p2p.peer)
+        signer_key=block.validated_by, peer_id=block_from_p2p.peer
+    )
     # just increase the confidence of this mapping
     deanon_node.confidence += 1
 
     # also put the information about IP of this peer into the DB if we don't remember it already
-    PeerToIP.get_or_insert(peer_id=block_from_p2p.peer, ip=block_from_p2p.peer_remote_addr)
+    PeerToIP.get_or_insert(
+        peer_id=block_from_p2p.peer, ip=block_from_p2p.peer_remote_addr
+    )
 
 
 @orm.db_session
@@ -49,14 +49,15 @@ def calculate_confidence_by_tx(block):
         # if there is no such node is remembered by us yet, create it
         # and just increase the confidence of this mapping
         DeanonNodeByTx.get_or_insert(
-            signer_key=block.validated_by, peer_id=tx_p2p.peer_id).confidence += 1
+            signer_key=block.validated_by, peer_id=tx_p2p.peer_id
+        ).confidence += 1
 
 
 def main_loop():
     while True:
         try:
             # get the block from some other thread
-            block_number = DeanonymizerQueue.get()
+            block_number = DeanonQueue.get()
             with orm.db_session:
                 block = Block.get(number=block_number)
                 calculate_confidence_by_block(block)

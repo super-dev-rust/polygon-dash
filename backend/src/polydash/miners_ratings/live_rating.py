@@ -5,16 +5,14 @@ import traceback
 from pony import orm
 from pony.orm import select
 
-from polydash.log import LOGGER
-from polydash.model.block import Block
-from polydash.model.block_p2p import BlockP2P
-from polydash.model.node_risk import NodeStats, BlockDelta
-from polydash.model.risk import MinerRisk
-from polydash.model.transaction_p2p import TransactionP2P
-from polydash.model.transaction_risk import TransactionRisk
-from polydash.rating.injections import InjectionDetector, INJECTION_DELAY_THRESHOLD
-from polydash.rating.outliers import OutlierDetector, RiskType
-from polydash.rating.rating_func import activity_coef, trust_score
+from common.log import LOGGER
+from polydash.block_retriever.model import Block
+from polydash.miners_ratings.model import NodeStats, BlockDelta, MinerRisk
+from polydash.p2p_data.model import TransactionP2P, BlockP2P
+from polydash.miners_ratings.model import TransactionRisk
+from polydash.miners_ratings.injections import InjectionDetector, INJECTION_DELAY_THRESHOLD
+from polydash.miners_ratings.outliers import OutlierDetector, RiskType
+from polydash.miners_ratings.rating_func import activity_coef, trust_score
 
 
 class PolygonRatingProcessor:

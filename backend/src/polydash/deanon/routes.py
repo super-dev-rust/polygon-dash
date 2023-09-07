@@ -1,23 +1,13 @@
-from fastapi import APIRouter, HTTPException
-from pony import orm
-from pydantic import BaseModel
-from typing import List
+from fastapi import APIRouter
 
-from polydash.model.deanon_node_by_tx import DeanonNodeByTx, DeanonNodeByTxInDB
-from polydash.model.deanon_node_by_block import DeanonNodeByBlock, DeanonNodeByBlockInDB
-from polydash.model.peer_to_ip import PeerToIP, PeerToIPInDB
+from polydash.deanon.model import *
 
-router = APIRouter(
+deanon_router = router = APIRouter(
     prefix="/deanon",
     tags=["deanon"],
     # dependencies=[Depends(get_token_header)],
     responses={404: {"description": "Not found"}},
 )
-
-
-class DeanonNodeByTxWithIP(BaseModel):
-    node: DeanonNodeByTxInDB
-    ips: List[str]
 
 
 def get_list_of_deanon_nodes_by_txs_with_ips(nodes_from_db):

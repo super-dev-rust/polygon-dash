@@ -1,6 +1,10 @@
+from typing import Optional
+
 from pony import orm
 from pony.orm import db_session
+from pydantic import BaseModel
 
+from polydash.common import GetOrInsertMixin
 from polydash.db import db
 
 
@@ -42,3 +46,37 @@ class MinerRisk(db.Entity):
         MinerRiskHistory(pubkey=pubkey, block_number=block_number,
                          risk=datapoint.risk, numblocks=datapoint.numblocks)
         return datapoint
+
+
+class NodeStats(db.Entity, GetOrInsertMixin):
+    pubkey = orm.PrimaryKey(str)
+    num_outliers = orm.Required(int, default=0)
+    num_injections = orm.Optional(int, default=0)
+    num_txs = orm.Optional(int, default=0)
+
+
+class BlockDelta(db.Entity):
+    block_number = orm.PrimaryKey(int)
+    hash = orm.Required(str, unique=True)
+    pubkey = orm.Required(str)
+    num_txs = orm.Required(int)
+    num_injections = orm.Required(int)
+    num_outliers = orm.Required(int)
+    block_time = orm.Required(int)
+
+
+class TransactionRisk(db.Entity):
+    id = orm.PrimaryKey(int, auto=True)
+    hash = orm.Required(str)
+    risk = orm.Optional(int)
+    live_time = orm.Required(int)
+
+
+class TransactionRiskOut(BaseModel):
+    id: int
+    hash: str
+    risk: Optional[int]
+    live_time: int
+
+    class Config:
+        orm_mode = True

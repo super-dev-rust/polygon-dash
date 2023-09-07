@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pony import orm
-from polydash.model.transaction_risk import TransactionRisk, TransactionRiskOut
+from polydash.miners_ratings.model import TransactionRisk, TransactionRiskOut
 
-router = APIRouter(
+transaction_risk_router = router = APIRouter(
     prefix="/tx_risk",
     tags=["transactions"],
     # dependencies=[Depends(get_token_header)],

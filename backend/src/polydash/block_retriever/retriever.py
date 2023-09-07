@@ -8,11 +8,11 @@ from pony import orm
 from pony.orm import desc
 
 from polydash.log import LOGGER
-from polydash.model.block import Block
-from polydash.model.transaction import Transaction
-from polydash.deanonymize.deanonymizer import DeanonymizerQueue
+from polydash.block_retriever.model import Block
+from polydash.block_retriever.model import Transaction
+from polydash.deanon.deanonymizer import DeanonQueue
 from polydash.settings import BlockRetrieverSettings
-from polydash.rating.polygon_live_rating import TransactionEventQueue
+from polydash.miners_ratings.live_rating import TransactionEventQueue
 from polydash.w3router_watcher.w3router_watcher import W3RouterEventQueue
 
 alchemy_token = ""
@@ -159,7 +159,7 @@ class BlockRetriever:
                             if db_tx not in block.transactions:
                                 block.transactions.add(db_tx)
                         orm.commit()
-                        DeanonymizerQueue.put(
+                        DeanonQueue.put(
                             block_number
                         )  # put the block for the deanon process to work
                         TransactionEventQueue.put(

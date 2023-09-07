@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pony import orm
-from polydash.model.block import Block, BlockInDB
+from polydash.block_retriever.model import Block, BlockInDB
 
-router = APIRouter(
+block_router = router = APIRouter(
     prefix="/block",
     tags=["blocks"],
     # dependencies=[Depends(get_token_header)],

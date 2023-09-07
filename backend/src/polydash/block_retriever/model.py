@@ -1,8 +1,24 @@
+from typing import List
+
 from pony import orm
 from pydantic import BaseModel, validator
-from typing import List
+
 from polydash.db import db
-from polydash.model.transaction import Transaction, TransactionOut
+
+
+class TransactionOut(BaseModel):
+    hash: str
+    creator: str
+    created: int
+    block: int
+
+
+class Transaction(db.Entity):
+    _table_ = "transaction"
+    hash = orm.PrimaryKey(str)
+    creator = orm.Required(str)
+    created = orm.Required(int)
+    block = orm.Required('Block')
 
 
 class Block(db.Entity):
