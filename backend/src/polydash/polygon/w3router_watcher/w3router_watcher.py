@@ -1,20 +1,20 @@
-import queue
 import threading
 import traceback
+from time import sleep
+
 import requests
 
 from pony import orm
 from pony.orm import db_session
 
-from common.log import LOGGER
+from polydash.common.log import LOGGER
 from polydash.miners_ratings.model import MinerRisk
-from polydash.deanon.model import DeanonNodeByTx, DeanonNodeByBlock, PeerToIP
-from polydash.settings import W3RouterSettings
-
-W3RouterEventQueue = queue.Queue()
+from polydash.polygon.deanon.model import DeanonNodeByTx, DeanonNodeByBlock, PeerToIP
+from polydash.polygon.w3router_watcher.settings import W3RouterSettings
 
 TOP_NODES_LIST_SIZE = 10
 BOR_RPC_PORT = 8545
+W3ROUTER_WATCHER_CHECK_INTERVAL = 10  # seconds
 
 
 class W3RouterWatcher:
@@ -122,13 +122,6 @@ class W3RouterWatcher:
     def main_loop(self):
         while True:
             try:
-                # get the block from some other thread; we're not really going to use the block number (at least for now),
-                # but we want to receive the notification itself
-                _ = W3RouterEventQueue.get()
-                # Empty the queue in case there were too many messages to process
-                # We are only interested in a single event
-                while W3RouterEventQueue.not_empty:
-                    W3RouterEventQueue.get_nowait()
                 self.check_top_nodes()
             except Exception as e:
                 traceback.print_exc()
@@ -137,6 +130,7 @@ class W3RouterWatcher:
                         str(e)
                     )
                 )
+            sleep(W3ROUTER_WATCHER_CHECK_INTERVAL)
 
     def start(self):
         LOGGER.info("Starting W3Router Watcher thread...")

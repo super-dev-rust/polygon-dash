@@ -4,10 +4,10 @@ import traceback
 
 from pony import orm
 
-from common.log import LOGGER
-from polydash.block_retriever.model import Block
-from polydash.deanon.model import DeanonNodeByBlock, PeerToIP, DeanonNodeByTx
-from polydash.p2p_data.model import TransactionP2P, BlockP2P
+from polydash.common.log import LOGGER
+from polydash.common.model import Block
+from polydash.polygon.deanon.model import DeanonNodeByBlock, PeerToIP, DeanonNodeByTx
+from polydash.polygon.p2p_data.model import TransactionP2P, BlockP2P
 
 DeanonQueue = queue.Queue()
 

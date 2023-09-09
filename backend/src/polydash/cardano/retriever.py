@@ -5,12 +5,13 @@ import traceback
 import requests
 from pony.orm import db_session
 
-from polydash.log import LOGGER
-from polydash.p2p_data.cardano import CardanoBlock, CardanoTransaction
-from polydash.miners_ratings.cardano_live_rating import CardanoBlockEventQueue
-from polydash.settings import CardanoRetrieverSettings
 
 from datetime import datetime, timezone
+
+from polydash.cardano.live_rating import CardanoBlockEventQueue
+from polydash.common.log import LOGGER
+from polydash.common.model import Transaction, Block
+from polydash.common.settings import BlockRetrieverSettings
 
 
 def datetime_string_to_timestamp(datetime_str):
@@ -38,11 +39,11 @@ def datetime_string_to_timestamp(datetime_str):
 
 class CardanoRetriever:
 
-    def __init__(self, settings: CardanoRetrieverSettings = None):
+    def __init__(self, settings: BlockRetrieverSettings = None):
         if settings is None:
-            self.settings = CardanoRetrieverSettings()
+            self.settings = BlockRetrieverSettings()
         self.__logger = LOGGER.getChild(self.__class__.__name__)
-        self.base_url = self.settings.mempool_rpc_url
+        self.base_url = self.settings.block_rpc_url
         self.failure_count = 0
         self.next_block_number = 9118742
         self.start_time = "2023-08-05T00:20:00.000Z"
@@ -101,8 +102,8 @@ class CardanoRetriever:
         block_creator = json_tx['pool_id']
         block_number = json_tx["block_no"]
 
-        if block := CardanoBlock.get(block_number=block_number) is None:
-            block = CardanoBlock(
+        if block := Block.get(block_number=block_number) is None:
+            block = Block(
                 block_number=block_number,
                 block_hash=block_hash,
                 block_creator=block_creator,
@@ -115,7 +116,7 @@ class CardanoRetriever:
             )
             CardanoBlockEventQueue.put(self.next_block_number)
 
-        tx = CardanoTransaction.get(tx_hash=tx_hash) or CardanoTransaction(
+        tx = Transaction.get(tx_hash=tx_hash) or Transaction(
             hash=tx_hash,
             first_seen_ts=datetime_string_to_timestamp(block_time),
             # If we never saw the transaction in mempool, emulate an injection

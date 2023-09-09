@@ -14,7 +14,5 @@ class PostgresSettings(BaseSettings):
     database: str = 'polydash'
 
 
-class DashboardSettings(BaseSettings):
-    postgres_connection: PostgresSettings = PostgresSettings()
-    port: int = 5500
-    host: str = '0.0.0.0'
+class BlockRetrieverSettings(BaseSettings):
+    block_rpc_url: str = None

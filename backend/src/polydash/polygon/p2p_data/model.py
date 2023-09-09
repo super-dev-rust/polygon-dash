@@ -1,8 +1,7 @@
 from pony import orm
 from pony.orm import PrimaryKey
 
-from common import GetOrInsertMixin
-from common.dashboard.db import db
+from polydash.common.db import GetOrInsertMixin, db
 
 
 class TransactionP2P(db.Entity, GetOrInsertMixin):

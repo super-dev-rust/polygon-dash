@@ -5,11 +5,11 @@ import pytest
 from pony.orm import db_session
 
 from polydash.db import db
-from polydash.block_retriever.model import Block
+from polydash.common.model import Block
 from polydash.miners_ratings.model import NodeStats, BlockDelta
 from polydash.miners_ratings.model import MinerRisk
-from polydash.block_retriever.model import Transaction
-from polydash.p2p_data.model import TransactionP2P
+from polydash.common.model import Transaction
+from polydash.polygon.p2p_data.model import TransactionP2P
 from polydash.miners_ratings.live_rating import PolygonRatingProcessor
 
 

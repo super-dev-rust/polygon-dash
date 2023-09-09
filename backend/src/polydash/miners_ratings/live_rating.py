@@ -5,10 +5,10 @@ import traceback
 from pony import orm
 from pony.orm import select
 
-from common.log import LOGGER
-from polydash.block_retriever.model import Block
+from polydash.common.log import LOGGER
+from polydash.common.model import Block
 from polydash.miners_ratings.model import NodeStats, BlockDelta, MinerRisk
-from polydash.p2p_data.model import TransactionP2P, BlockP2P
+from polydash.polygon.p2p_data.model import TransactionP2P, BlockP2P
 from polydash.miners_ratings.model import TransactionRisk
 from polydash.miners_ratings.injections import InjectionDetector, INJECTION_DELAY_THRESHOLD
 from polydash.miners_ratings.outliers import OutlierDetector, RiskType

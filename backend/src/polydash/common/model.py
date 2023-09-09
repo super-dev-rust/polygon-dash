@@ -3,7 +3,7 @@ from typing import List
 from pony import orm
 from pydantic import BaseModel, validator
 
-from polydash.db import db
+from polydash.common.db import db
 
 
 class TransactionOut(BaseModel):
@@ -19,6 +19,10 @@ class Transaction(db.Entity):
     creator = orm.Required(str)
     created = orm.Required(int)
     block = orm.Required('Block')
+
+    # Cardano - specific
+    first_seen_ts = orm.Optional(int, size=64)
+    finalized_ts = orm.Optional(int, size=64)
 
 
 class Block(db.Entity):

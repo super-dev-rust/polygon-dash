@@ -3,12 +3,10 @@ from typing import List, Optional
 
 from fastapi import APIRouter, HTTPException, Query
 from pony.orm import db_session, desc
-from pydantic import BaseModel, Json
+from pydantic import BaseModel
 
-from polydash.log import LOGGER
-from polydash.model.block import Block
-from polydash.model.node_risk import BlockDelta
-from polydash.model.risk import MinerRisk, MinerRiskHistory
+from polydash.common.log import LOGGER
+from polydash.common.model import Block
 
 TRUST_SCORE_Y_AXIS = "percentage"
 VIOLATIONS_Y_AXIS = "num_violations"

@@ -4,8 +4,7 @@ from pony import orm
 from pony.orm import PrimaryKey
 from pydantic import BaseModel
 
-from polydash.db import db
-from polydash.p2p_data import GetOrInsertMixin
+from polydash.common.db import db, GetOrInsertMixin
 
 
 class DeanonNodeByBlock(db.Entity, GetOrInsertMixin):

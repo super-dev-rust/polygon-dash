@@ -5,23 +5,23 @@ import traceback
 from pony import orm
 from pony.orm import select
 
-from polydash.log import LOGGER
-from polydash.p2p_data.cardano import CardanoTransactionRisk, CardanoBlock, CardanoBlockDelta, CardanoMinerStats, \
-    CardanoMinerRisk, CardanoTransaction
+from polydash.common.log import LOGGER
 from polydash.miners_ratings.injections import InjectionDetector
+from polydash.miners_ratings.model import TransactionRisk, BlockDelta, NodeStats, MinerRisk
 from polydash.miners_ratings.outliers import OutlierDetector, RiskType
 from polydash.miners_ratings.rating_func import activity_coef, trust_score
+from polydash.common.model import Transaction, Block
 
 
 class CardanoRatingProcessor:
 
     def __init__(self):
-        self.outlier_detector = OutlierDetector(CardanoTransactionRisk)
+        self.outlier_detector = OutlierDetector(TransactionRisk)
 
     def process_transaction(self,
-                            tx: CardanoTransaction,
-                            block_author: CardanoMinerStats,
-                            block_delta: CardanoBlockDelta
+                            tx: Transaction,
+                            block_author: NodeStats,
+                            block_delta: BlockDelta
                             ):
         is_inject = InjectionDetector.is_transaction_injection(tx.finalized_ts, tx.first_seen_ts)
         if is_inject:
@@ -34,20 +34,20 @@ class CardanoRatingProcessor:
                 block_author.num_outliers += 1
                 block_delta.num_outliers += 1
         # Record transaction risk
-        CardanoTransactionRisk(
+        TransactionRisk(
             hash=tx.hash,
             live_time=tx.finalized_ts - tx.first_seen_ts,
             risk=tx_risk.value
         )
 
-    def process_block(self, block: CardanoBlock):
+    def process_block(self, block: Block):
         with orm.db_session:
-            if CardanoBlockDelta.get(block_number=block.number) is not None:
+            if BlockDelta.get(block_number=block.number) is not None:
                 # Block already processed
                 return
 
             num_txs = len(block.transactions)
-            block_delta = CardanoBlockDelta(
+            block_delta = BlockDelta(
                 block_number=block.number,
                 hash=block.hash,
                 pubkey=block.creator,
@@ -57,8 +57,8 @@ class CardanoRatingProcessor:
                 block_time=block.timestamp
             )
 
-            if (author_node := CardanoMinerStats.get(pubkey=block.validated_by)) is None:
-                author_node = CardanoMinerStats(
+            if (author_node := NodeStats.get(pubkey=block.validated_by)) is None:
+                author_node = NodeStats(
                     pubkey=block.creator,
                     num_outliers=0,
                     num_injections=0,
@@ -70,14 +70,14 @@ class CardanoRatingProcessor:
                                          author_node,
                                          block_delta)
 
-            max_txs = max(ns.num_txs for ns in select(ns for ns in CardanoMinerStats))
+            max_txs = max(ns.num_txs for ns in select(ns for ns in NodeStats))
             act_coef = activity_coef(author_node.num_txs, max_txs)
             score = trust_score(act_coef,
                                 author_node.num_injections,
                                 author_node.num_outliers,
                                 author_node.num_txs)
 
-            CardanoMinerRisk.add_datapoint_new(block.validated_by,
+            MinerRisk.add_datapoint_new(block.validated_by,
                                                score,
                                                block.number)
 
@@ -94,7 +94,7 @@ def main_loop():
             block_number = CardanoBlockEventQueue.get()
 
             with orm.db_session:
-                block = CardanoBlock.get(number=block_number)
+                block = Block.get(number=block_number)
                 processor.process_block(block)
 
         except Exception as e:
