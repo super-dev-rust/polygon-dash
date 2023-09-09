@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from polydash.common.log import LOGGER
 from polydash.common.model import Block
 
-TRUST_SCORE_Y_AXIS = "percentage"
+TRUST_SCORE_Y_AXIS = "y"
 VIOLATIONS_Y_AXIS = "num_violations"
 BIN_SIZE = 1
 
