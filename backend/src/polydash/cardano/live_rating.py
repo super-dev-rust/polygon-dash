@@ -12,17 +12,22 @@ from polydash.miners_ratings.outliers import OutlierDetector, RiskType
 from polydash.miners_ratings.rating_func import activity_coef, trust_score
 from polydash.common.model import Transaction, Block
 
+CardanoBlockEventQueue = queue.Queue()
 
-class CardanoRatingProcessor:
 
-    def __init__(self):
+class CardanoRatingProcessor(threading.Thread):
+
+    def __init__(self, *args, **kwargs):
+        super(CardanoRatingProcessor, self).__init__(*args, **kwargs)
         self.outlier_detector = OutlierDetector(TransactionRisk)
+        self.logger = LOGGER.getChild(self.__class__.__name__)
 
     def process_transaction(self,
                             tx: Transaction,
                             block_author: NodeStats,
                             block_delta: BlockDelta
                             ):
+        # If we never saw the transaction in mempool, emulate an injection
         is_inject = InjectionDetector.is_transaction_injection(tx.finalized_ts, tx.first_seen_ts)
         if is_inject:
             tx_risk = RiskType.RISK_INJECTION
@@ -36,7 +41,7 @@ class CardanoRatingProcessor:
         # Record transaction risk
         TransactionRisk(
             hash=tx.hash,
-            live_time=tx.finalized_ts - tx.first_seen_ts,
+            live_time=(tx.finalized_ts - tx.first_seen_ts) if tx.first_seen_ts else 0,
             risk=tx_risk.value
         )
 
@@ -50,7 +55,7 @@ class CardanoRatingProcessor:
             block_delta = BlockDelta(
                 block_number=block.number,
                 hash=block.hash,
-                pubkey=block.creator,
+                pubkey=block.validated_by,
                 num_txs=num_txs,
                 num_injections=0,
                 num_outliers=0,
@@ -59,7 +64,7 @@ class CardanoRatingProcessor:
 
             if (author_node := NodeStats.get(pubkey=block.validated_by)) is None:
                 author_node = NodeStats(
-                    pubkey=block.creator,
+                    pubkey=block.validated_by,
                     num_outliers=0,
                     num_injections=0,
                     num_txs=0,
@@ -78,34 +83,24 @@ class CardanoRatingProcessor:
                                 author_node.num_txs)
 
             MinerRisk.add_datapoint_new(block.validated_by,
-                                               score,
-                                               block.number)
+                                        score,
+                                        block.number)
 
+    def run(self):
+        self.logger.info("Starting Cardano rating thread...")
+        while True:
+            try:
+                # get the block from some other thread
+                block_number = CardanoBlockEventQueue.get()
 
-CardanoBlockEventQueue = queue.Queue()
+                with orm.db_session:
+                    block = Block.get(number=block_number)
+                    self.process_block(block)
 
-
-def main_loop():
-    processor = CardanoRatingProcessor()
-
-    while True:
-        try:
-            # get the block from some other thread
-            block_number = CardanoBlockEventQueue.get()
-
-            with orm.db_session:
-                block = Block.get(number=block_number)
-                processor.process_block(block)
-
-        except Exception as e:
-            traceback.print_exc()
-            LOGGER.error(
-                "exception when calculating the live-time transaction mean&variance happened: {}".format(
-                    str(e)
+            except Exception as e:
+                traceback.print_exc()
+                self.logger.error(
+                    "exception when calculating the live-time transaction mean&variance happened: {}".format(
+                        str(e)
+                    )
                 )
-            )
-
-
-def start_live_time_cardano_rating():
-    LOGGER.info("Starting Cardano rating thread...")
-    threading.Thread(target=main_loop, daemon=True).start()

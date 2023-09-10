@@ -13,7 +13,6 @@ def start_db(settings: PostgresSettings, postgres_schema=None):
         options = f"-c search_path={postgres_schema}"
     db.bind(provider='postgres', options=options, **dict(settings))
     db.generate_mapping(create_tables=True)
-    db.create_tables(True)
     LOGGER.info('database is successfully started up')
 
 

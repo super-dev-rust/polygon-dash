@@ -9,10 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from polydash.cardano.startup import routers_cardano, startup_sequence_cardano
 from polydash.common.db import start_db
+from polydash.common.log import LOGGER
 from polydash.dashboard.settings import DashboardSettings
 from polydash.polygon.startup import routers_polygon, startup_sequence_polygon
-
-CARDANO_POSTGRES_SCHEMA_NAME = "cardano_dashboard"
 
 
 # ACHTUNG!
@@ -35,6 +34,7 @@ def cli(ctx, settings):
         with open(settings, 'r') as file:
             s = DashboardSettings(**yaml.safe_load(file))
     ctx.obj = Dashboard(s)
+    LOGGER.setLevel(s.log_level)
 
 
 @cli.command()
@@ -49,7 +49,6 @@ def cardano(ctx):
     ctx.obj.start_dashboard(
         routers_cardano,
         startup_sequence_cardano,
-        postgres_schema_name=CARDANO_POSTGRES_SCHEMA_NAME
     )
 
 
@@ -62,14 +61,12 @@ class Dashboard:
 
     def start_dashboard(self,
                         routers: list[APIRouter],
-                        startup_callback: Callable,
-                        postgres_schema_name: [str | NoneType] = None):
+                        startup_callback: Callable):
         self.__routers = routers
         self.__startup_callback = startup_callback
         self.__app = FastAPI()
 
-        start_db(self.__settings.postgres_connection,
-                 postgres_schema=postgres_schema_name)
+        start_db(self.__settings.postgres_connection)
         self.__startup_callback(self.__settings)
 
         # FastAPI set up

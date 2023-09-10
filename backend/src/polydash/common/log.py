@@ -6,9 +6,9 @@ import logging
 class LogConfig(BaseModel):
     """Logging configuration to be set for the server"""
 
-    LOGGER_NAME: str = "polygon-dash"
+    LOGGER_NAME: str = "polydash"
     LOG_FORMAT: str = "%(levelprefix)s | %(asctime)s | %(message)s"
-    LOG_LEVEL: str = "DEBUG"
+    LOG_LEVEL: str = "ERROR"
 
     # Logging config
     version = 1
@@ -33,4 +33,4 @@ class LogConfig(BaseModel):
 
 
 dictConfig(LogConfig().dict())
-LOGGER = logging.getLogger("polygon-dash")
+LOGGER = logging.getLogger("polydash")

@@ -224,13 +224,12 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         blocks_data = []
         skipped_blocks_data = []
 
-        data_bin = []
         violations_sum = 0
         outliers_sum = 0
         transactions_sum = 0
         num_blocks_added = 0
         for block in blocks_history:
-            if (plagued_block := BlockDelta.get(block_number=block.number)) is None:
+            if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
                 continue
 
             if (blocks_data and
@@ -246,7 +245,7 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             # Populate blocks data for now, maybe it will be used later
             blocks_data.append(
                 MinerBlocksData(
-                    block_number=block.number,
+                    block_number=block.block_number,
                     block_hash=plagued_block.hash,
                     risk=block.risk,
                 )
@@ -258,12 +257,11 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             transactions_sum += Block.get(number=block.block_number).transactions.count()
             if num_blocks_added == BIN_SIZE:
                 # Populate labels(block numbers as strings) for chart
-                labels.append(str(block.number))
+                labels.append(str(block.block_number))
                 skipped_blocks_data.append(None)
                 risk_data.append(100.0 * block.risk)
                 violations_data.append(((100.0 * violations_sum)/transactions_sum) if transactions_sum else None)
                 outliers_data.append(((100.0 * outliers_sum)/transactions_sum) if transactions_sum else None)
-                print (violations_sum, transactions_sum)
                 num_blocks_added = 0
                 violations_sum = 0
                 outliers_sum = 0

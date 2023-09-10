@@ -15,10 +15,11 @@ from polydash.polygon.deanon.deanonymizer import DeanonQueue
 from polydash.miners_ratings.live_rating import TransactionEventQueue
 
 
-class BlockRetriever:
-    def __init__(self, settings: BlockRetrieverSettings):
+class BlockRetriever(threading.Thread):
+    def __init__(self, *args, settings: BlockRetrieverSettings = None, **kwargs):
+        super().__init__(*args, **kwargs)
         self.settings = settings
-        self.__logger = LOGGER.getChild(self.__class__.__name__)
+        self.logger = LOGGER.getChild(self.__class__.__name__)
         self.failure_count = 0
         self.block_already_in_db = False
 
@@ -27,7 +28,7 @@ class BlockRetriever:
         headers = {"accept": "application/json", "content-type": "application/json"}
         response = requests.post(self.settings.block_rpc_url, json=payload, headers=headers)
         if response.status_code != 200:
-            self.__logger.error(
+            self.logger.error(
                 "could not make a request: {}, {}".format(
                     response.status_code, response.text
                 )
@@ -36,10 +37,10 @@ class BlockRetriever:
 
         json_response = json.loads(response.text)
         if json_response is None:
-            self.__logger.error("could not make a request: json_response is None")
+            self.logger.error("could not make a request: json_response is None")
             return None
         if "error" in json_response:
-            self.__logger.error(
+            self.logger.error(
                 "could not make a request: error in the response: {}".format(
                     json_response["error"]
                 )
@@ -79,7 +80,7 @@ class BlockRetriever:
         while (author := self.make_request("bor_getAuthor", ["0x{:x}".format(block_number)])) is None:
             if failure_count > 5:
                 raise "could not retrieve the author of the block"
-            self.__logger.info(
+            self.logger.info(
                 "trying to retrieve the author of block {} again...".format(
                     block_number
                 )
@@ -112,8 +113,7 @@ class BlockRetriever:
                 db_tx = Transaction.get(hash=tx[0]) or Transaction(
                     hash=tx[0],
                     creator=tx[1],
-                    created=block_ts,
-                    block=block_number,
+                    block=block,
                 )
                 if db_tx not in block.transactions:
                     block.transactions.add(db_tx)
@@ -125,7 +125,7 @@ class BlockRetriever:
             # put the block for the Transaction Risks to work
             TransactionEventQueue.put(block_number)
 
-            self.__logger.debug(
+            self.logger.debug(
                 "retrieved and saved into DB block with number {} and hash {}".format(
                     block_number, block_hash
                 )
@@ -141,7 +141,7 @@ class BlockRetriever:
         return next_block_number
 
     def handle_failure(self, block_number):
-        self.__logger.error(
+        self.logger.error(
             f"giving up trying to retrieve block {block_number}, moving to the next one..."
         )
         self.failure_count = 0
@@ -160,11 +160,11 @@ class BlockRetriever:
             return block_number + 1
         except Exception as e:
             traceback.print_exc()
-            self.__logger.error("exception when retrieving block happened: {}".format(e))
+            self.logger.error("exception when retrieving block happened: {}".format(e))
             return block_number
 
-    def retriever_loop(self):
-        self.__logger.info("block retrieved thread has started")
+    def run(self):
+        self.logger.info("Starting block retriever thread...")
         next_block_number = self.get_next_block_number()
         while True:
             self.block_already_in_db = False
@@ -173,7 +173,3 @@ class BlockRetriever:
             next_block_number = self.process_block(next_block_number)
             # Add just some timeout to avoid spamming the server
             time.sleep(0.1 if self.block_already_in_db else 1)
-
-    def start(self):
-        self.__logger.info("Starting block retriever thread...")
-        threading.Thread(target=self.retriever_loop, daemon=True).start()

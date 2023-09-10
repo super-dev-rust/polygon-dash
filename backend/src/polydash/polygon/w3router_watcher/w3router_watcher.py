@@ -17,13 +17,14 @@ BOR_RPC_PORT = 8545
 W3ROUTER_WATCHER_CHECK_INTERVAL = 10  # seconds
 
 
-class W3RouterWatcher:
+class W3RouterWatcher(threading.Thread):
     """
     Purpose of this class is to recalculate the list of the most trusted nodes every time a new block
     is received and, if there are any changes, push them into the W3Router itself
     """
 
-    def __init__(self, settings: W3RouterSettings = W3RouterSettings()):
+    def __init__(self, *args, settings: W3RouterSettings = None, **kwargs):
+        super().__init__(*args, **kwargs)
         self.last_top_nodes_list = []
         self.settings = settings
         self.last_send_failed = False

@@ -48,7 +48,7 @@ class BlockDelta(db.Entity):
     num_txs = orm.Required(int)
     num_injections = orm.Required(int)
     num_outliers = orm.Required(int)
-    block_time = orm.Required(int)
+    block_time = orm.Required(int, size=64)
 
 
 class TransactionRisk(db.Entity):

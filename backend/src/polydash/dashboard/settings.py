@@ -11,3 +11,4 @@ class DashboardSettings(BaseSettings):
     w3_router: W3RouterSettings = W3RouterSettings()
     port: int = 5500
     host: str = '0.0.0.0'
+    log_level: str = 'ERROR'

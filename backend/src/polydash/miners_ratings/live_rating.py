@@ -14,10 +14,14 @@ from polydash.miners_ratings.injections import InjectionDetector, INJECTION_DELA
 from polydash.miners_ratings.outliers import OutlierDetector, RiskType
 from polydash.miners_ratings.rating_func import activity_coef, trust_score
 
+TransactionEventQueue = queue.Queue()
 
-class PolygonRatingProcessor:
 
-    def __init__(self):
+class PolygonRatingProcessor(threading.Thread):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.logger = LOGGER.getChild(self.__class__.__name__)
         self.outlier_detector = OutlierDetector(TransactionRisk)
 
     def process_transaction(self,
@@ -96,31 +100,21 @@ class PolygonRatingProcessor:
                                         score,
                                         block.number)
 
+    def run(self):
+        LOGGER.info("Starting Polygon rating thread...")
+        while True:
+            try:
+                # get the block from some other thread
+                block_number = TransactionEventQueue.get()
 
-TransactionEventQueue = queue.Queue()
+                with orm.db_session:
+                    block = Block.get(number=block_number)
+                    self.process_block(block)
 
-
-def main_loop():
-    processor = PolygonRatingProcessor()
-
-    while True:
-        try:
-            # get the block from some other thread
-            block_number = TransactionEventQueue.get()
-
-            with orm.db_session:
-                block = Block.get(number=block_number)
-                processor.process_block(block)
-
-        except Exception as e:
-            traceback.print_exc()
-            LOGGER.error(
-                "exception when calculating the live-time transaction mean&variance happened: {}".format(
-                    str(e)
+            except Exception as e:
+                traceback.print_exc()
+                self.logger.error(
+                    "exception when calculating the live-time transaction mean&variance happened: {}".format(
+                        str(e)
+                    )
                 )
-            )
-
-
-def start_live_time_polygon_rating():
-    LOGGER.info("Starting Polygon rating thread...")
-    threading.Thread(target=main_loop, daemon=True).start()

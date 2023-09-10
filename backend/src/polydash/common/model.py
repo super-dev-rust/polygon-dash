@@ -9,15 +9,13 @@ from polydash.common.db import db
 class TransactionOut(BaseModel):
     hash: str
     creator: str
-    created: int
     block: int
 
 
 class Transaction(db.Entity):
     _table_ = "transaction"
     hash = orm.PrimaryKey(str)
-    creator = orm.Required(str)
-    created = orm.Required(int)
+    creator = orm.Optional(str)
     block = orm.Required('Block')
 
     # Cardano - specific
@@ -30,7 +28,7 @@ class Block(db.Entity):
     hash = orm.Required(str, unique=True)
     validated_by = orm.Required(str)
     transactions = orm.Set(Transaction)
-    timestamp = orm.Required(int)
+    timestamp = orm.Required(int, size=64)
 
 
 class BlockInDB(BaseModel):
