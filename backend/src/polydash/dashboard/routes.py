@@ -17,26 +17,23 @@ CHARTJS_OPTIONS = {
         TRUST_SCORE_Y_AXIS: {
             "max": 100,
             "min": 0,
-            "type": 'linear',
-            "position": 'left'
+            "type": "linear",
+            "position": "left",
         },
         VIOLATIONS_Y_AXIS: {
             "ticks": {"beginAtZero": True, "color": "red"},
-            "type": 'logarithmic',
+            "type": "logarithmic",
             "grid": {"display": False},
-            "position": 'right'
+            "position": "right",
         },
-        "x": {
-            "beginAtZero": True,
-            "stacked": True
-        }
+        "x": {"beginAtZero": True, "stacked": True},
     },
     "responsive": True,
     "legend": {
         "labels": {
-            "fontColor": 'red',
+            "fontColor": "red",
         }
-    }
+    },
 }
 from polydash.miners_ratings.model import BlockDelta, MinerRisk, MinerRiskHistory
 
@@ -133,10 +130,10 @@ SORT_COLUMNS_MAP = {
 
 @router.get("/miners")
 async def get_miners_info(
-        page: int = 0,
-        pagesize: int = 20,
-        order_by: SortBy = Query(SortBy.rank, title="Sort By"),
-        sort_order: SortOrder = Query(None, title="Sort Order"),
+    page: int = 0,
+    pagesize: int = 20,
+    order_by: SortBy = Query(SortBy.rank, title="Sort By"),
+    sort_order: SortOrder = Query(None, title="Sort Order"),
 ) -> DashboardData:
     with db_session():
         # TODO: this one is horribly inefficient,
@@ -145,7 +142,9 @@ async def get_miners_info(
         ranks = {m.pubkey: rank for rank, m in enumerate(miners_by_risk)}
         violations_by_miner = {m.pubkey: [] for m in miners_by_risk}
 
-        for block in BlockDelta.select().order_by(desc(BlockDelta.block_number)).limit(3000):
+        for block in (
+            BlockDelta.select().order_by(desc(BlockDelta.block_number)).limit(3000)
+        ):
             # only show last three violations for a node
             if len(violations_by_miner[block.pubkey]) > 2:
                 continue
@@ -195,9 +194,7 @@ async def get_miners_info(
                 rank=ranks[m.pubkey],
                 name="UNKNOWN",
                 blocks_created=m.numblocks / total_block_count,
-                violations=violations_by_miner[
-                    m.pubkey
-                ],
+                violations=violations_by_miner[m.pubkey],
             )
             for m in miners
         ]
@@ -211,8 +208,12 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         if MinerRisk.get(pubkey=address) is None:
             raise HTTPException(status_code=404, detail="Miner not found")
 
-        blocks_history = MinerRiskHistory.select().where(pubkey=address).order_by(MinerRiskHistory.block_number).limit(
-            last_blocks)
+        blocks_history = (
+            MinerRiskHistory.select()
+            .where(pubkey=address)
+            .order_by(MinerRiskHistory.block_number)
+            .limit(last_blocks)
+        )
         if not blocks_history:
             return MinerChartData(labels=[], datasets=[], blocks_data=[])
 
@@ -229,11 +230,17 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
         transactions_sum = 0
         num_blocks_added = 0
         for block in blocks_history:
-            if (plagued_block := BlockDelta.get(block_number=block.block_number)) is None:
+            saved_block_delta = BlockDelta.get(block_number=block.block_number)
+            if saved_block_delta is None:
                 continue
 
-            if (blocks_data and
-                    (blocks_delta := (block.block_number - blocks_data[-1].block_number)) > 1):
+            if (
+                blocks_data
+                and (
+                    blocks_delta := (block.block_number - blocks_data[-1].block_number)
+                )
+                > 1
+            ):
                 # This miner skipped some blocks, so insert and additional datapoint
                 # in the chart to indicate it
                 skipped_blocks_data.append(blocks_delta)
@@ -246,22 +253,32 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
             blocks_data.append(
                 MinerBlocksData(
                     block_number=block.block_number,
-                    block_hash=plagued_block.hash,
+                    block_hash=saved_block_delta.hash,
                     risk=block.risk,
                 )
             )
 
             num_blocks_added += 1
-            violations_sum += plagued_block.num_injections
-            outliers_sum += plagued_block.num_outliers
-            transactions_sum += Block.get(number=block.block_number).transactions.count()
+            violations_sum += saved_block_delta.num_injections
+            outliers_sum += saved_block_delta.num_outliers
+            transactions_sum += Block.get(
+                number=block.block_number
+            ).transactions.count()
             if num_blocks_added == BIN_SIZE:
                 # Populate labels(block numbers as strings) for chart
                 labels.append(str(block.block_number))
                 skipped_blocks_data.append(None)
                 risk_data.append(100.0 * block.risk)
-                violations_data.append(((100.0 * violations_sum)/transactions_sum) if transactions_sum else None)
-                outliers_data.append(((100.0 * outliers_sum)/transactions_sum) if transactions_sum else None)
+                violations_data.append(
+                    ((100.0 * violations_sum) / transactions_sum)
+                    if transactions_sum
+                    else None
+                )
+                outliers_data.append(
+                    ((100.0 * outliers_sum) / transactions_sum)
+                    if transactions_sum
+                    else None
+                )
                 num_blocks_added = 0
                 violations_sum = 0
                 outliers_sum = 0
@@ -277,8 +294,9 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 stack="risk_score",
                 data=risk_data,
                 yAxisID=TRUST_SCORE_Y_AXIS,
-                tension="0.5"
-            ), MinerChartDataset(
+                tension="0.5",
+            ),
+            MinerChartDataset(
                 order=2,
                 label="Injections",
                 borderColor="#CD212A",
@@ -286,7 +304,8 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 backgroundColor="#CD212A",
                 data=violations_data,
                 yAxisID=TRUST_SCORE_Y_AXIS,
-            ), MinerChartDataset(
+            ),
+            MinerChartDataset(
                 order=3,
                 label="Outliers (suspected injections)",
                 borderColor=OUTLIERS_COLOR,
@@ -294,7 +313,8 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 backgroundColor=OUTLIERS_COLOR,
                 data=outliers_data,
                 yAxisID=TRUST_SCORE_Y_AXIS,
-            ), MinerChartDataset(
+            ),
+            MinerChartDataset(
                 order=4,
                 label="Skipped blocks",
                 borderColor="#000000",
@@ -302,12 +322,10 @@ async def get_miner_info(address: str, last_blocks: int = 100) -> MinerChartData
                 backgroundColor="#000000",
                 data=skipped_blocks_data,
                 yAxisID=VIOLATIONS_Y_AXIS,
-            ), ]
+            ),
+        ]
 
-        return MinerChartData(
-            labels=labels,
-            datasets=datasets,
-            total=len(labels))
+        return MinerChartData(labels=labels, datasets=datasets, total=len(labels))
 
 
 @router.get("/trust-distribution")
@@ -334,8 +352,8 @@ async def get_miner_trust_distribution() -> MinersTrustDistribution:
                 label="PieChart",
                 data=[trusted, suspicious, untrusted],
                 backgroundColor=["#58d68d", "#f7dc6f", "#ec7063"],
-                hoverBackgroundColor=["#2ecc71", "#f4d03f", "#e74c3c"]
-            )
+                hoverBackgroundColor=["#2ecc71", "#f4d03f", "#e74c3c"],
+            ),
         )
 
     return result

@@ -16,7 +16,7 @@ class Transaction(db.Entity):
     _table_ = "transaction"
     hash = orm.PrimaryKey(str)
     creator = orm.Optional(str)
-    block = orm.Required('Block')
+    block = orm.Required("Block")
 
     # Cardano - specific
     first_seen_ts = orm.Optional(int, size=64)
@@ -38,7 +38,7 @@ class BlockInDB(BaseModel):
     timestamp: int
     transactions: List[TransactionOut]
 
-    @validator('transactions', pre=True, allow_reuse=True)
+    @validator("transactions", pre=True, allow_reuse=True)
     def pony_set_to_list(cls, values):
         return [v.to_dict() for v in values]
 

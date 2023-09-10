@@ -8,5 +8,7 @@ def activity_coef(num_txs, max_txs) -> float:
 
 
 def trust_score(act_coef, num_injections, num_outliers, num_txs) -> float:
-    return act_coef * (0.8 * (1 - (num_injections / num_txs) ** 0.4)
-                       + 0.2 * (1 - (num_outliers / num_txs) ** 0.4))
+    return act_coef * (
+        0.8 * (1 - (num_injections / num_txs) ** 0.4)
+        + 0.2 * (1 - (num_outliers / num_txs) ** 0.4)
+    )

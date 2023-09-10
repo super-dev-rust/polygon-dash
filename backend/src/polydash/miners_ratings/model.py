@@ -29,8 +29,12 @@ class MinerRisk(db.Entity):
         datapoint.numblocks += 1
         datapoint.block_number = block_number
         # Add historical record
-        MinerRiskHistory(pubkey=pubkey, block_number=block_number,
-                         risk=datapoint.risk, numblocks=datapoint.numblocks)
+        MinerRiskHistory(
+            pubkey=pubkey,
+            block_number=block_number,
+            risk=datapoint.risk,
+            numblocks=datapoint.numblocks,
+        )
         return datapoint
 
 

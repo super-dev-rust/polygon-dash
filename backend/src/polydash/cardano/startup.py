@@ -12,6 +12,4 @@ def startup_sequence_cardano(s: DashboardSettings):
     CardanoBlockRetriever(daemon=True, settings=s.block_retriever).start()
 
 
-routers_cardano = [block_router,
-                   dashboard_router,
-                   transaction_risk_router]
+routers_cardano = [block_router, dashboard_router, transaction_risk_router]

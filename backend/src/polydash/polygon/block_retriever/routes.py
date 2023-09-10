@@ -10,7 +10,7 @@ block_router = router = APIRouter(
 )
 
 
-@router.get('/get_latest')
+@router.get("/get_latest")
 async def get_latest():
     with orm.db_session:
         blocks = Block.select().order_by(orm.desc(Block.number))[:1]

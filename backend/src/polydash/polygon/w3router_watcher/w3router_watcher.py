@@ -40,7 +40,9 @@ class W3RouterWatcher(threading.Thread):
             response = requests.post(url, json=self.last_top_nodes_list)
             if response.status_code != 200:
                 LOGGER.error(
-                    "W3Router has returned {} as status code".format(response.status_code)
+                    "W3Router has returned {} as status code".format(
+                        response.status_code
+                    )
                 )
                 return True
         except requests.exceptions.ConnectionError:
@@ -48,7 +50,9 @@ class W3RouterWatcher(threading.Thread):
             return True
         except Exception as e:
             traceback.print_exc()
-            LOGGER.error("Exception when trying to connect to W3Router: {}".format(str(e)))
+            LOGGER.error(
+                "Exception when trying to connect to W3Router: {}".format(str(e))
+            )
             return True
         return False
 
@@ -109,7 +113,9 @@ class W3RouterWatcher(threading.Thread):
                     continue
                 # We store original P2P connection node:port
                 # We must change it to look like normal RPC URL instead
-                new_top_nodes[current_priority] = f"http://{ip.split(':')[0]}:{BOR_RPC_PORT}"
+                new_top_nodes[
+                    current_priority
+                ] = f"http://{ip.split(':')[0]}:{BOR_RPC_PORT}"
                 current_priority += 1
 
                 # if we have gathered enough nodes information, finish

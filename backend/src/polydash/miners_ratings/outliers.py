@@ -12,7 +12,6 @@ class RiskType(enum.Enum):
 
 
 class OutlierDetector:
-
     def __init__(self, TX_RISK_CLASS):
         self.tdigest = TDigest()
         self.TX_RISK = TX_RISK_CLASS
@@ -26,9 +25,9 @@ class OutlierDetector:
     def add_new_transaction(self, tx_live_time: int):
         self.tdigest.update(tx_live_time)
 
-    def assess_transaction_risk(self,
-                                tx_finalized_time: int,
-                                tx_arrival_time: int) -> RiskType:
+    def assess_transaction_risk(
+        self, tx_finalized_time: int, tx_arrival_time: int
+    ) -> RiskType:
         tx_live_time = tx_finalized_time - tx_arrival_time
         if tx_live_time < 0:
             return RiskType.RISK_TOO_FAST

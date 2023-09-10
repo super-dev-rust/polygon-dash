@@ -8,10 +8,10 @@ class PostgresSettings(BaseSettings):
     # As the 'user' var is typically set for the current user,
     # it will override the default from this file unless you specify it in the .yaml file.
     password: str = None
-    user: str = 'postgres'
-    host: str = 'localhost'
+    user: str = "postgres"
+    host: str = "localhost"
     port: int = 5432
-    database: str = 'polydash'
+    database: str = "polydash"
 
 
 class BlockRetrieverSettings(BaseSettings):

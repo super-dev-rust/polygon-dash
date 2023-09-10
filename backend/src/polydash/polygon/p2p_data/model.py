@@ -5,7 +5,7 @@ from polydash.common.db import GetOrInsertMixin, db
 
 
 class TransactionP2P(db.Entity, GetOrInsertMixin):
-    _table_ = 'tx_summary'
+    _table_ = "tx_summary"
     tx_hash = orm.Required(str, index=True)
     peer_id = orm.Required(str)
     PrimaryKey(tx_hash, peer_id)
@@ -13,8 +13,7 @@ class TransactionP2P(db.Entity, GetOrInsertMixin):
 
     @classmethod
     def get_first_by_hash(cls, tx_hash):
-        return cls.select().where(tx_hash=tx_hash).order_by(
-            cls.tx_first_seen).first()
+        return cls.select().where(tx_hash=tx_hash).order_by(cls.tx_first_seen).first()
 
 
 class BlockP2P(db.Entity):
@@ -29,5 +28,9 @@ class BlockP2P(db.Entity):
 
     @classmethod
     def get_first_by_hash(cls, block_hash):
-        return cls.select().where(block_hash=block_hash).order_by(
-            cls.first_seen_ts).first()
+        return (
+            cls.select()
+            .where(block_hash=block_hash)
+            .order_by(cls.first_seen_ts)
+            .first()
+        )

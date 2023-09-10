@@ -18,11 +18,13 @@ from polydash.polygon.startup import routers_polygon, startup_sequence_polygon
 # The way Click command groups work, you must put common (i.e. '--settings something.yaml')
 # parameters BEFORE the actual command (i.e. 'polygon')
 @click.group()
-@click.option('--settings',
-              '-s',
-              required=False,
-              type=click.Path(exists=True),
-              help='Path to the settings file (e.g. settings.yaml)')
+@click.option(
+    "--settings",
+    "-s",
+    required=False,
+    type=click.Path(exists=True),
+    help="Path to the settings file (e.g. settings.yaml)",
+)
 @click.pass_context
 def cli(ctx, settings):
     """This is the main entry point for the command line application"""
@@ -31,7 +33,7 @@ def cli(ctx, settings):
     if settings is None:
         s = DashboardSettings()
     else:
-        with open(settings, 'r') as file:
+        with open(settings, "r") as file:
             s = DashboardSettings(**yaml.safe_load(file))
     ctx.obj = Dashboard(s)
     LOGGER.setLevel(s.log_level)
@@ -59,9 +61,7 @@ class Dashboard:
         self.__app = FastAPI()
         self.__settings = settings
 
-    def start_dashboard(self,
-                        routers: list[APIRouter],
-                        startup_callback: Callable):
+    def start_dashboard(self, routers: list[APIRouter], startup_callback: Callable):
         self.__routers = routers
         self.__startup_callback = startup_callback
         self.__app = FastAPI()
@@ -80,6 +80,4 @@ class Dashboard:
         for router in self.__routers:
             self.__app.include_router(router)
 
-        uvicorn.run(self.__app,
-                    host=self.__settings.host,
-                    port=self.__settings.port)
+        uvicorn.run(self.__app, host=self.__settings.host, port=self.__settings.port)

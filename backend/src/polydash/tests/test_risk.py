@@ -15,25 +15,28 @@ from polydash.miners_ratings.live_rating import PolygonRatingProcessor
 
 @pytest.fixture
 def mock_db():
-    db.bind(provider='sqlite', filename=':memory:', create_db=True)
+    db.bind(provider="sqlite", filename=":memory:", create_db=True)
     db.generate_mapping(create_tables=True)
 
 
 def test_process_block(mock_db):
-    with (db_session):
+    with db_session:
         block_ts = 100
         miner_id = "miner1"
         block_hash = "abc"
 
-        block = Block(number=1,
-                      hash=block_hash,
-                      validated_by=miner_id,
-                      timestamp=block_ts)
+        block = Block(
+            number=1, hash=block_hash, validated_by=miner_id, timestamp=block_ts
+        )
         block_ts *= 1000
         for i in range(100):
             # generate random string of 10 chars
-            tx_hash = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
-            creator = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
+            tx_hash = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=10)
+            )
+            creator = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=10)
+            )
 
             block.transactions.add(
                 Transaction(
@@ -45,30 +48,32 @@ def test_process_block(mock_db):
             )
             # 0 - 1: injections
             # Regular tx
-            peer_id = ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
+            peer_id = "".join(
+                random.choices(string.ascii_uppercase + string.digits, k=5)
+            )
             if 2 <= i <= 95:
                 delta = random.randint(4500, 5000)
-                TransactionP2P(tx_hash=tx_hash,
-                               peer_id=peer_id,
-                               tx_first_seen=block_ts - delta)
+                TransactionP2P(
+                    tx_hash=tx_hash, peer_id=peer_id, tx_first_seen=block_ts - delta
+                )
             elif 96 <= i <= 97:
                 # fast transactions
                 delta = random.randint(0, 200)
-                TransactionP2P(tx_hash=tx_hash,
-                               peer_id=peer_id,
-                               tx_first_seen=block_ts - delta)
+                TransactionP2P(
+                    tx_hash=tx_hash, peer_id=peer_id, tx_first_seen=block_ts - delta
+                )
             elif i == 98:
                 # Transaction with small negative delta
                 delta = random.randint(10, 9999)
-                TransactionP2P(tx_hash=tx_hash,
-                               peer_id=peer_id,
-                               tx_first_seen=block_ts + delta)
+                TransactionP2P(
+                    tx_hash=tx_hash, peer_id=peer_id, tx_first_seen=block_ts + delta
+                )
             elif i == 99:
                 # Transaction with big negative delta
                 delta = random.randint(10001, 20000)
-                TransactionP2P(tx_hash=tx_hash,
-                               peer_id=peer_id,
-                               tx_first_seen=block_ts + delta)
+                TransactionP2P(
+                    tx_hash=tx_hash, peer_id=peer_id, tx_first_seen=block_ts + delta
+                )
         assert block.transactions.count() == 100
         PolygonRatingProcessor().process_block(block)
 

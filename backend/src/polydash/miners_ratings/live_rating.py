@@ -10,7 +10,10 @@ from polydash.common.model import Block
 from polydash.miners_ratings.model import NodeStats, BlockDelta, MinerRisk
 from polydash.polygon.p2p_data.model import TransactionP2P, BlockP2P
 from polydash.miners_ratings.model import TransactionRisk
-from polydash.miners_ratings.injections import InjectionDetector, INJECTION_DELAY_THRESHOLD
+from polydash.miners_ratings.injections import (
+    InjectionDetector,
+    INJECTION_DELAY_THRESHOLD,
+)
 from polydash.miners_ratings.outliers import OutlierDetector, RiskType
 from polydash.miners_ratings.rating_func import activity_coef, trust_score
 
@@ -18,29 +21,32 @@ TransactionEventQueue = queue.Queue()
 
 
 class PolygonRatingProcessor(threading.Thread):
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = LOGGER.getChild(self.__class__.__name__)
         self.outlier_detector = OutlierDetector(TransactionRisk)
 
-    def process_transaction(self,
-                            tx_hash: str,
-                            tx_finalized: int,
-                            block_author: NodeStats,
-                            block_delta: BlockDelta
-                            ):
-
+    def process_transaction(
+        self,
+        tx_hash: str,
+        tx_finalized: int,
+        block_author: NodeStats,
+        block_delta: BlockDelta,
+    ):
         tx_arrival_time = None
         if (tx_p2p := TransactionP2P.get_first_by_hash(tx_hash)) is not None:
             tx_arrival_time = tx_p2p.tx_first_seen
-        is_inject = InjectionDetector.is_transaction_injection(tx_finalized, tx_arrival_time)
+        is_inject = InjectionDetector.is_transaction_injection(
+            tx_finalized, tx_arrival_time
+        )
         if is_inject:
             block_author.num_injections += 1
             block_delta.num_injections += 1
             tx_risk = RiskType.RISK_INJECTION
         else:
-            tx_risk = self.outlier_detector.assess_transaction_risk(tx_finalized, tx_arrival_time)
+            tx_risk = self.outlier_detector.assess_transaction_risk(
+                tx_finalized, tx_arrival_time
+            )
             if tx_risk == RiskType.RISK_TOO_FAST:
                 block_author.num_outliers += 1
                 block_delta.num_outliers += 1
@@ -49,9 +55,7 @@ class PolygonRatingProcessor(threading.Thread):
             tx_arrival_time = tx_finalized - INJECTION_DELAY_THRESHOLD
 
         TransactionRisk(
-            hash=tx_hash,
-            live_time=tx_finalized - tx_arrival_time,
-            risk=tx_risk.value
+            hash=tx_hash, live_time=tx_finalized - tx_arrival_time, risk=tx_risk.value
         )
 
     def process_block(self, block: Block):
@@ -73,7 +77,7 @@ class PolygonRatingProcessor(threading.Thread):
                 num_txs=num_txs,
                 num_injections=0,
                 num_outliers=0,
-                block_time=block.timestamp
+                block_time=block.timestamp,
             )
 
             if (author_node := NodeStats.get(pubkey=block.validated_by)) is None:
@@ -85,20 +89,18 @@ class PolygonRatingProcessor(threading.Thread):
                 )
             author_node.num_txs += num_txs
             for tx in block.transactions:
-                self.process_transaction(tx.hash, block_ts,
-                                         author_node,
-                                         block_delta)
+                self.process_transaction(tx.hash, block_ts, author_node, block_delta)
 
             max_txs = max(ns.num_txs for ns in select(ns for ns in NodeStats))
             act_coef = activity_coef(author_node.num_txs, max_txs)
-            score = trust_score(act_coef,
-                                author_node.num_injections,
-                                author_node.num_outliers,
-                                author_node.num_txs)
+            score = trust_score(
+                act_coef,
+                author_node.num_injections,
+                author_node.num_outliers,
+                author_node.num_txs,
+            )
             # update miner risk
-            MinerRisk.add_datapoint_new(block.validated_by,
-                                        score,
-                                        block.number)
+            MinerRisk.add_datapoint_new(block.validated_by, score, block.number)
 
     def run(self):
         LOGGER.info("Starting Polygon rating thread...")

@@ -29,7 +29,6 @@ def timestamp_to_datetime_string(timestamp):
 
 
 class CardanoBlockRetriever(threading.Thread):
-
     def __init__(self, *args, settings: BlockRetrieverSettings = None, **kwargs):
         super().__init__(*args, **kwargs)
         self.settings = settings or BlockRetrieverSettings()
@@ -40,16 +39,20 @@ class CardanoBlockRetriever(threading.Thread):
         self.limit = 1000
         with db_session:
             last_added_block = Block.select().order_by(Block.number.desc()).first()
-            self.current_block_number = last_added_block.number if last_added_block else 0
+            self.current_block_number = (
+                last_added_block.number if last_added_block else 0
+            )
 
     def get_transactions(self, pool=None, from_datetime=None, limit=None):
         """
         Fetches a list of transactions from the given API endpoint.
         """
         api_url = f"{self.base_url}/api/v1/tx/confirmed"
-        params = {'pool': pool,
-                  'from': timestamp_to_datetime_string(from_datetime),
-                  'limit': limit}
+        params = {
+            "pool": pool,
+            "from": timestamp_to_datetime_string(from_datetime),
+            "limit": limit,
+        }
         response = requests.get(api_url, params=params)
 
         if response.status_code != 200:
@@ -68,7 +71,11 @@ class CardanoBlockRetriever(threading.Thread):
     @db_session
     def __process_single_transaction_entry(self, json_tx, block):
         tx_hash = json_tx["tx_hash"]
-        arrival_time = datetime_string_to_timestamp(json_tx['arrival_time']) if json_tx.get('arrival_time') else None
+        arrival_time = (
+            datetime_string_to_timestamp(json_tx["arrival_time"])
+            if json_tx.get("arrival_time")
+            else None
+        )
 
         tx = Transaction.get(hash=tx_hash) or Transaction(
             hash=tx_hash,
@@ -78,7 +85,9 @@ class CardanoBlockRetriever(threading.Thread):
         )
         block.transactions.add(tx)
         self.logger.debug(
-            "retrieved and saved into DB transaction with hash {}, block {}".format(tx.hash, block.hash)
+            "retrieved and saved into DB transaction with hash {}, block {}".format(
+                tx.hash, block.hash
+            )
         )
         self.start_time = block.timestamp
 
@@ -86,7 +95,7 @@ class CardanoBlockRetriever(threading.Thread):
     def __get_or_create_block(self, json_tx):
         block_time = datetime_string_to_timestamp(json_tx["block_time"])
         block_hash = json_tx["block_hash"]
-        block_creator = json_tx['pool_id']
+        block_creator = json_tx["pool_id"]
         block_number = json_tx["block_no"]
         if (block := Block.get(number=block_number)) is None:
             block = Block(
@@ -104,13 +113,19 @@ class CardanoBlockRetriever(threading.Thread):
 
     def __fetch_and_process_transactions(self):
         # first, retrieve the block
-        if (json_txs_list := self.get_transactions(from_datetime=self.start_time, limit=self.limit)) is None:
+        if (
+            json_txs_list := self.get_transactions(
+                from_datetime=self.start_time, limit=self.limit
+            )
+        ) is None:
             self.failure_count += 1
             return
 
         with db_session:
             for json_tx in json_txs_list:
-                if self.current_block_number != (tx_block_number := json_tx['block_no']):
+                if self.current_block_number != (
+                    tx_block_number := json_tx["block_no"]
+                ):
                     # We must commit transaction by block granularity
                     # to properly feed the analyzer thread
                     orm.commit()
@@ -134,12 +149,16 @@ class CardanoBlockRetriever(threading.Thread):
         retrieve_next_batch_immediately = False
         while True:
             try:
-                retrieve_next_batch_immediately = self.__fetch_and_process_transactions()
+                retrieve_next_batch_immediately = (
+                    self.__fetch_and_process_transactions()
+                )
             except Exception as e:
                 self.failure_count += 1
                 # TODO: instead redo the logger to save tracebacks
                 traceback.print_exc()
-                self.logger.error("exception when retrieving block happened: {}".format(e))
+                self.logger.error(
+                    "exception when retrieving block happened: {}".format(e)
+                )
             if not retrieve_next_batch_immediately:
                 # time.sleep(20)
                 time.sleep(1)

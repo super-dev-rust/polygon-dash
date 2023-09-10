@@ -26,7 +26,9 @@ class BlockRetriever(threading.Thread):
     def make_request(self, rpc_method, params):
         payload = {"jsonrpc": "2.0", "method": rpc_method, "params": params}
         headers = {"accept": "application/json", "content-type": "application/json"}
-        response = requests.post(self.settings.block_rpc_url, json=payload, headers=headers)
+        response = requests.post(
+            self.settings.block_rpc_url, json=payload, headers=headers
+        )
         if response.status_code != 200:
             self.logger.error(
                 "could not make a request: {}, {}".format(
@@ -77,7 +79,11 @@ class BlockRetriever(threading.Thread):
         # https://docs.alchemy.com/reference/bor-getauthor-polygon
 
         failure_count = 0
-        while (author := self.make_request("bor_getAuthor", ["0x{:x}".format(block_number)])) is None:
+        while (
+            author := self.make_request(
+                "bor_getAuthor", ["0x{:x}".format(block_number)]
+            )
+        ) is None:
             if failure_count > 5:
                 raise "could not retrieve the author of the block"
             self.logger.info(
@@ -136,7 +142,10 @@ class BlockRetriever(threading.Thread):
         next_block_number = 46699999
         with orm.db_session:
             last_block_in_db = Block.select().order_by(desc(Block.number)).first()
-            if last_block_in_db is not None and last_block_in_db.number > next_block_number:
+            if (
+                last_block_in_db is not None
+                and last_block_in_db.number > next_block_number
+            ):
                 next_block_number = last_block_in_db.number + 1
         return next_block_number
 

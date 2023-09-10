@@ -5,8 +5,15 @@ from pony import orm
 from pony.orm import db_session
 from pydantic import BaseModel
 
-from polydash.polygon.deanon.model import DeanonNodeByBlockInDB, PeerToIPInDB, DeanonNodeByTxWithIP, DeanonNodeByTxInDB, \
-    PeerToIP, DeanonNodeByTx, DeanonNodeByBlock
+from polydash.polygon.deanon.model import (
+    DeanonNodeByBlockInDB,
+    PeerToIPInDB,
+    DeanonNodeByTxWithIP,
+    DeanonNodeByTxInDB,
+    PeerToIP,
+    DeanonNodeByTx,
+    DeanonNodeByBlock,
+)
 
 deanon_router = router = APIRouter(
     prefix="/deanon",

@@ -16,7 +16,9 @@ def startup_sequence_polygon(s: DashboardSettings):
     W3RouterWatcher(daemon=True, settings=s.w3_router).start()
 
 
-routers_polygon = [block_router,
-                   dashboard_router,
-                   deanon_router,
-                   transaction_risk_router]
+routers_polygon = [
+    block_router,
+    dashboard_router,
+    deanon_router,
+    transaction_risk_router,
+]
