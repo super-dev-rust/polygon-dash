@@ -8,8 +8,10 @@ from fastapi import FastAPI, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 
 from polydash.cardano.startup import routers_cardano, startup_sequence_cardano
-from polydash.common.db import start_db
+from polydash.common.db import db
+from polydash.common.db_start import start_db
 from polydash.common.log import LOGGER
+from polydash.common.upgrade import upgrade_from_v1
 from polydash.dashboard.settings import DashboardSettings
 from polydash.polygon.startup import routers_polygon, startup_sequence_polygon
 
@@ -42,7 +44,10 @@ def cli(ctx, settings):
 @cli.command()
 @click.pass_context
 def polygon(ctx):
-    ctx.obj.start_dashboard(routers_polygon, startup_sequence_polygon)
+    ctx.obj.start_dashboard(
+        routers_polygon,
+        startup_sequence_polygon,
+        network_name="polygon")
 
 
 @cli.command()
@@ -51,7 +56,15 @@ def cardano(ctx):
     ctx.obj.start_dashboard(
         routers_cardano,
         startup_sequence_cardano,
+        network_name="cardano",
     )
+
+
+@cli.command()
+@click.pass_context
+def upgrade(ctx):
+    db.bind(provider="postgres", **dict(ctx.obj.settings.postgres_connection))
+    upgrade_from_v1(db)
 
 
 class Dashboard:
@@ -59,15 +72,18 @@ class Dashboard:
         self.__routers = []
         self.__startup_callback = None
         self.__app = FastAPI()
-        self.__settings = settings
+        self.settings = settings
 
-    def start_dashboard(self, routers: list[APIRouter], startup_callback: Callable):
+    def start_dashboard(self,
+                        routers: list[APIRouter],
+                        startup_callback: Callable,
+                        network_name: str = None):
         self.__routers = routers
         self.__startup_callback = startup_callback
         self.__app = FastAPI()
 
-        start_db(self.__settings.postgres_connection)
-        self.__startup_callback(self.__settings)
+        start_db(self.settings.postgres_connection, network_name)
+        self.__startup_callback(self.settings)
 
         # FastAPI set up
         self.__app.add_middleware(
@@ -80,4 +96,4 @@ class Dashboard:
         for router in self.__routers:
             self.__app.include_router(router)
 
-        uvicorn.run(self.__app, host=self.__settings.host, port=self.__settings.port)
+        uvicorn.run(self.__app, host=self.settings.host, port=self.settings.port)

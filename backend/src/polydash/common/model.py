@@ -12,6 +12,11 @@ class TransactionOut(BaseModel):
     block: int
 
 
+class AuxiliaryData(db.Entity):
+    key = orm.PrimaryKey(str)
+    value = orm.Optional(str)
+
+
 class Transaction(db.Entity):
     _table_ = "transaction"
     hash = orm.PrimaryKey(str)
