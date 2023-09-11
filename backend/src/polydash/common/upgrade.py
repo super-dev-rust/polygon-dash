@@ -33,6 +33,16 @@ def upgrade_from_v1(db):
     """)
 
     cur.execute("""
+        ALTER TABLE transaction
+        ADD COLUMN first_seen_ts BIGINT;
+    """)
+
+    cur.execute("""
+        ALTER TABLE transaction
+        ADD COLUMN finalized_ts BIGINT;
+    """)
+
+    cur.execute("""
         CREATE TABLE auxillarydata(
         key TEXT PRIMARY KEY,
         value TEXT
@@ -52,8 +62,8 @@ def upgrade_from_v1(db):
 
 def upgrade_db(version):
     # TBD
+    LOGGER.error("Upgrade not implemented, exiting.")
     exit(1)
-    pass
 
 
 @db_session
@@ -66,14 +76,14 @@ def check_db_version(network_name):
     else:
         if (name_in_db := AuxiliaryData.get(key=NETWORK_NAME_KEY).value) != network_name:
             LOGGER.error(
-                "DB network name mismatch. Expected: %s, Actual: %s. Starting migration",
+                "DB network name mismatch. Expected: %s, Actual: %s.",
                 network_name,
                 name_in_db,
             )
             exit(1)
         if version != CURRENT_DB_VERSION:
             LOGGER.warn(
-                "DB version mismatch. Expected: %s, Actual: %s. Starting DB ugrade",
+                "DB version mismatch. Expected: %s, Actual: %s. Starting migration",
                 CURRENT_DB_VERSION,
                 version,
             )
