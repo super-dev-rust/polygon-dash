@@ -9,3 +9,4 @@ frontend/dist
 
 creds.env
 /pg_data
+/pg_data_cardano

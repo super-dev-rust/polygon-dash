@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  pg:
+  pg_polygon:
     image: postgres:latest
     restart: always
     ports:
@@ -8,7 +8,16 @@ services:
     volumes:
         - ./pg_data:/var/lib/postgresql/data
     env_file:
-      - creds.env
+      - creds.polygon.env
+  pg_cardano:
+    image: postgres:latest
+    restart: always
+    ports:
+      - 1235:5432
+    volumes:
+        - ./pg_data_cardano:/var/lib/postgresql/data
+    env_file:
+      - creds.cardano.env
   bor:
     image: shockedshodan/plaguedbor:latest
     restart: always
@@ -46,17 +55,22 @@ services:
       - 30303:30303
       - 30303:30303/udp
     depends_on:
-      - backend
+      - backend_polygon
     env_file:
-      - creds.env
-  backend:
+      - creds.polygon.env
+  backend_polygon:
     restart: always
     depends_on:
-      - pg
+      - pg_polygon
     build: ./backend
-    volumes:
-      - dbdata:/app/src/polydash/dbdata
     ports:
       - 5500:5500
-volumes:
-  dbdata:
+    command: ["poetry", "run", "python", "-m", "polydash", "-s", "polygon.yaml", "polygon"]
+  backend_cardano:
+    restart: always
+    depends_on:
+      - pg_cardano
+    build: ./backend
+    ports:
+      - 5501:5500
+    command: ["poetry", "run", "python", "-m", "polydash", "-s", "cardano.yaml", "cardano"]
