@@ -16,7 +16,3 @@ ENV PATH="/root/.local/bin:$PATH"
 
 # Use Poetry to install dependencies
 RUN poetry install --no-dev --no-interaction --no-ansi
-
-# Run the application as a Python module
-CMD ["poetry", "run", "python", "-m", "polydash", "-s", "settings.yaml", "polygon"]
-# CMD ["poetry", "run", "python", "-m", "polydash"]

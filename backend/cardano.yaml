@@ -1,0 +1,7 @@
+postgres_connection:
+  password: postgres
+  user: postgres
+  host: pg_cardano
+  
+block_retriever:
+  block_rpc_url: <URL>
