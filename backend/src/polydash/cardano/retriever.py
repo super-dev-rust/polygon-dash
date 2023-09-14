@@ -48,7 +48,7 @@ class CardanoBlockRetriever(threading.Thread):
         Fetches a list of transactions from the given API endpoint.
         """
         api_url = f"{self.base_url}/api/v1/tx/confirmed"
-        self.logger.error("api_url: {}".format(api_url))
+        
         params = {
             "pool": pool,
             "from": timestamp_to_datetime_string(from_datetime),
